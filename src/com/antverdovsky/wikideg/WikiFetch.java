@@ -13,7 +13,7 @@ public class WikiFetch {
 	 * @param urlLink The URL link from which to download the data.
 	 * @return A String containing all of the data of the link.
 	 * @throws IOException If there occurs an error reading the data from the
-	 * 					   URL. 
+	 *                     URL. 
 	 */
 	public static String getData(String urlLink) throws 
 			IOException {
@@ -39,7 +39,7 @@ public class WikiFetch {
 	 * Gets the URL of the Wiki Request Page containing the referenced links
 	 * of the page with the specified name.
 	 * @param name The name of the page for which the referenced links page is
-	 *			   to be fetched.
+	 *             to be fetched.
 	 * @return The URL link.
 	 */
 	public static String getLinksURL(String name) {
@@ -55,7 +55,7 @@ public class WikiFetch {
 	 * Gets the URL of the Wiki Request Page containing the title which link
 	 * reference the page of the specified name.
 	 * @param name The name of the page for which the backlinks page is to be
-	 * 			   fetched.
+	 *             fetched.
 	 * @return The URL link.
 	 */
 	public static String getBacklinksURL(String name) {
