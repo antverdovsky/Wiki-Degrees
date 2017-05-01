@@ -53,6 +53,28 @@ public class WikiFetch {
 	}
 	
 	/**
+	 * Gets the URL of the Wiki Request Page containing the referenced links
+	 * of the page with the specified name. The continue token is applied to
+	 * offset the Request Page returned.
+	 * @param name The name of the page for which the referenced links page is
+	 *             to be fetched.
+	 * @param cont The continue token, fetched from the previous JSON page.
+	 * @return The URL link.
+	 */
+	public static String getLinksURL(String name, String cont) {
+		// Construct the URL onto which the title of the page will be added.
+		// This requests the links used on some page in JSON format.
+		final String PRE_TITLE_URL = "https://en.wikipedia.org/w/api.php?" + 
+				"action=query&format=json&prop=links&pllimit=max" + 
+				"&plnamespace=0&titles=";
+		
+		// The string containing the continue token
+		String continueToken = "&plcontinue=" + cont;
+		
+		return WikiFetch.appendURL(PRE_TITLE_URL, name, continueToken);
+	}
+	
+	/**
 	 * Gets the URL of the Wiki Request Page containing the title which link
 	 * reference the page of the specified name.
 	 * @param name The name of the page for which the backlinks page is to be
@@ -71,6 +93,29 @@ public class WikiFetch {
 	}
 	
 	/**
+	 * Gets the URL of the Wiki Request Page containing the referenced 
+	 * backlinks of the page with the specified name. The continue token is
+	 * applied to offset the Request Page returned.
+	 * @param name The name of the page for which the referenced links page is
+	 *             to be fetched.
+	 * @param cont The continue token, fetched from the previous JSON page.
+	 * @return The URL link.
+	 */
+	public static String getBacklinksURL(String name, String cont) {
+		// Construct the URL onto which the title of the page will be added.
+		// This requests the backlinks used on some page in JSON format,
+		// excluding any redirect pages.
+		final String PRE_TITLE_URL = "https://en.wikipedia.org/w/api.php?" + 
+				"action=query&format=json&list=backlinks&bllimit=max" + 
+				"&blnamespace=0&blfilterredir=nonredirects&bltitle=";
+		
+		// The string containing the continue token
+		String continueToken = "&blcontinue=" + cont;
+		
+		return WikiFetch.appendURL(PRE_TITLE_URL, name, continueToken);
+	}
+	
+	/**
 	 * Appends the name string onto a copy of the pre title string and returns
 	 * the result.
 	 * @param preTitle The pre title URL string.
@@ -86,6 +131,26 @@ public class WikiFetch {
 		// result.
 		StringBuilder sB = new StringBuilder(preTitle);
 		sB.append(name);
+		return sB.toString();
+	}
+	
+	/**
+	 * Appends the name and continue string onto a copy of the pre title 
+	 * string and returns the result.
+	 * @param preTitle The pre title URL string.
+	 * @param name The name of the page to be appended.
+	 * @param cont The continue string.
+	 * @return The appended URL string.
+	 */
+	private static String appendURL(String preTitle, String name, 
+			String cont) {
+		name = name.replaceAll(" ", "_");
+		
+		// Build the String using the PRE_TITLE_URL + name + continue, and 
+		// return the result.
+		StringBuilder sB = new StringBuilder(preTitle);
+		sB.append(name);
+		sB.append(cont);
 		return sB.toString();
 	}
 }

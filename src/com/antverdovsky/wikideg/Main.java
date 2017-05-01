@@ -7,8 +7,8 @@ import com.antverdovsky.wikideg.WikiParse.LinksResult;
 
 public class Main {
 	public static void main(String[] args) {
-		String boLinkForward = WikiFetch.getLinksURL("Barack Obama");
-		String boLinkBack = WikiFetch.getBacklinksURL("Barack Obama");
+		String boLinkForward = WikiFetch.getLinksURL("Barack Obama", "534366|0|Elie_Wiesel");
+		String boLinkBack = WikiFetch.getBacklinksURL("Barack Obama", "0|49260");
 		
 		String boLData = "empty";
 		String boBLData = "empty";
