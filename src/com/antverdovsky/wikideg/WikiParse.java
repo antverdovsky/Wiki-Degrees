@@ -74,9 +74,18 @@ public class WikiParse {
 			backlinksList.add(title);
 		}
 		
-		// Navigate Root -> Continue and fetch the plContinue entry
-		JsonElement cont = root.getAsJsonObject().get("continue"); 
-		String blCont = cont.getAsJsonObject().get("blcontinue").toString();
+		// Navigate Root -> Continue. If unable, then there is no continue
+		// token, so make the continue token empty.
+		String blCont;
+		JsonElement cont = root.getAsJsonObject().get("continue");
+		if (cont != null) {
+			// Fetch the blContinue entry. Strip the quotation marks from the 
+			// continue entry.
+			blCont = cont.getAsJsonObject().get("blcontinue").toString();
+			blCont = blCont.replaceAll("\"", "");
+		} else {
+			blCont = "";
+		}
 		
 		// Construct the Result and return
 		LinksResult result = new LinksResult(backlinksList, blCont);
@@ -127,9 +136,18 @@ public class WikiParse {
 			linksList.add(title);
 		}
 		
-		// Navigate Root -> Continue and fetch the plContinue entry
-		JsonElement cont = root.getAsJsonObject().get("continue"); 
-		String plCont = cont.getAsJsonObject().get("plcontinue").toString();
+		// Navigate Root -> Continue. If unable, then there is no continue
+		// token, so make the continue token empty.
+		String plCont;
+		JsonElement cont = root.getAsJsonObject().get("continue");
+		if (cont != null) {
+			// Fetch the plContinue entry. Strip the quotation marks from the 
+			// continue entry.
+			plCont = cont.getAsJsonObject().get("plcontinue").toString();
+			plCont = plCont.replaceAll("\"", "");
+		} else {
+			plCont = "";
+		}
 		
 		// Construct the Result and return
 		LinksResult result = new LinksResult(linksList, plCont);
