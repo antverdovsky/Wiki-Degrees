@@ -12,7 +12,7 @@ import com.google.gson.JsonParser;
 public class WikiParse {
 	static class LinksResult {
 		private ArrayList<String> links;    // List of all links in JSON data
-		private String plContinue;          // Continue entry in JSON data
+		private String lContinue;           // Continue entry in JSON data
 		
 		/**
 		 * Initializes a new Links Result instance with the specified links
@@ -22,7 +22,7 @@ public class WikiParse {
 		 */
 		public LinksResult(ArrayList<String> links, String cont) {
 			this.links = links;
-			this.plContinue = cont;
+			this.lContinue = cont;
 		}
 		
 		/**
@@ -35,11 +35,52 @@ public class WikiParse {
 		
 		/**
 		 * Returns the Continue Token of this LinkResult.
-		 * @return The PlContinue Token.
+		 * @return The lContinue Token.
 		 */
-		public String getPlContinue() {
-			return this.plContinue;
+		public String getLContinue() {
+			return this.lContinue;
 		}
+	}
+	
+	/**
+	 * Parses the specified JSON data and returns an instance of the 
+	 * LinksResult class containing the list of all the backlinks in the JSON
+	 * data, as well as the continue token, if applicable. If the JSON file
+	 * has no continue entry, the continue token will be empty. If the JSON
+	 * data is invalid, null is returned.
+	 * @param json The JSON data which is to be parsed.
+	 * @return The LinksResult instance containing the links and the continue
+	 *         token, or null if the JSON data is invalid.
+	 */
+	public static LinksResult parseBacklinks(String json) {
+		// Create an empty ArrayList to store the Links with a capacity of 500
+		// links (maximum from one JSON data file).
+		ArrayList<String> backlinksList = new ArrayList<String>(500);
+		
+		// Create a JSON Parser using GSON and parse the root of the JSON data
+		JsonParser jParser = new JsonParser();
+		JsonElement root = jParser.parse(json);
+		
+		// Navigate Root -> Query -> Backlinks
+		JsonElement query = root.getAsJsonObject().get("query");
+		JsonElement backlinks = query.getAsJsonObject().get("backlinks");
+		JsonArray backlinksArray = backlinks.getAsJsonArray();
+		
+		// Move all of the titles from the JsonArray into the List
+		for (JsonElement e : backlinksArray) { // Foreach link
+			JsonObject linkObj = e.getAsJsonObject();
+			
+			String title = linkObj.get("title").getAsString();
+			backlinksList.add(title);
+		}
+		
+		// Navigate Root -> Continue and fetch the plContinue entry
+		JsonElement cont = root.getAsJsonObject().get("continue"); 
+		String blCont = cont.getAsJsonObject().get("blcontinue").toString();
+		
+		// Construct the Result and return
+		LinksResult result = new LinksResult(backlinksList, blCont);
+		return result;
 	}
 	
 	/**
@@ -53,10 +94,6 @@ public class WikiParse {
 	 *         token, or null if the JSON data is invalid.
 	 */
 	public static LinksResult parseLinks(String json) {
-		/********************************
-		 * TODO: Handle Continue Token. *
-		 ********************************/
-		
 		// Create an empty ArrayList to store the Links with a capacity of 500
 		// links (maximum from one JSON data file).
 		ArrayList<String> linksList = new ArrayList<String>(500);
@@ -82,23 +119,19 @@ public class WikiParse {
 		JsonElement links = entry.getAsJsonObject().get("links");
 		JsonArray linksArray = links.getAsJsonArray();
 		
-		for (JsonElement e : linksArray) { // Foreach link in the links array
+		// Move all of the titles from the JsonArray into the List 
+		for (JsonElement e : linksArray) {
 			JsonObject linkObj = e.getAsJsonObject();
 			
-			// Fetch the namespace and title of the link
-			int namespace = linkObj.get("ns").getAsInt();
 			String title = linkObj.get("title").getAsString();
-			
-			// If the namespace is zero then this is a valid Wikipedia Article
-			// link, so add it to the links list.
-			if (namespace == 0) linksList.add(title);
+			linksList.add(title);
 		}
 		
 		// Navigate Root -> Continue and fetch the plContinue entry
 		JsonElement cont = root.getAsJsonObject().get("continue"); 
 		String plCont = cont.getAsJsonObject().get("plcontinue").toString();
 		
-		// Construct the Result and return.
+		// Construct the Result and return
 		LinksResult result = new LinksResult(linksList, plCont);
 		return result;
 	}

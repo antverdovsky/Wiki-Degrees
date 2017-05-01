@@ -46,7 +46,8 @@ public class WikiFetch {
 		// Construct the URL onto which the title of the page will be added.
 		// This requests the links used on some page in JSON format.
 		final String PRE_TITLE_URL = "https://en.wikipedia.org/w/api.php?" + 
-				"action=query&format=json&prop=links&pllimit=max&titles=";
+				"action=query&format=json&prop=links&pllimit=max" + 
+				"&plnamespace=0&titles=";
 		
 		return WikiFetch.appendURL(PRE_TITLE_URL, name);
 	}
@@ -63,8 +64,8 @@ public class WikiFetch {
 		// This requests the backlinks used on some page in JSON format,
 		// excluding any redirect pages.
 		final String PRE_TITLE_URL = "https://en.wikipedia.org/w/api.php?" + 
-				"action=query&format=json&list=backlinks&bllimit=max&" + 
-				"blfilterredir=nonredirects&bltitle=";
+				"action=query&format=json&list=backlinks&bllimit=max" + 
+				"&blnamespace=0&blfilterredir=nonredirects&bltitle=";
 		
 		return WikiFetch.appendURL(PRE_TITLE_URL, name);
 	}
