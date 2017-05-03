@@ -2,6 +2,7 @@ package com.antverdovsky.wikideg;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class WikiAPI {
 	/**
@@ -11,14 +12,14 @@ public class WikiAPI {
 	 * @param target If any link extracted from the starting article is equal
 	 *               to the target, the target is appended to the list and the
 	 *               list is returned as is (short circuits the algorithm).
-	 * @return The list of all (or some, if target is found) of the backlinks of
+	 * @return The set of all (or some, if target is found) of the backlinks of
 	 *         the Wikipedia article.
 	 * @throws IOException If the article data could not be fetched.
 	 */
-	public static ArrayList<String> getAllBacklinks(String article, 
+	public static HashSet<String> getAllBacklinks(String article, 
 			String target) throws IOException {
-		// Declare the List of all of the Backlinks
-		ArrayList<String> allBacklinks = new ArrayList<String>();
+		// Declare the set of all of the Backlinks
+		HashSet<String> allBacklinks = new HashSet<String>();
 
 		// Get the URL of the Wiki Request Page and fetch the first JSON file
 		String url = WikiFetch.getBacklinksURL(article);
@@ -49,14 +50,14 @@ public class WikiAPI {
 	 * @param target If any link extracted from the starting article is equal
 	 *               to the target, the target is appended to the list and the
 	 *               list is returned as is (short circuits the algorithm).
-	 * @return The list of all (or some, if the target is found) of the links
+	 * @return The set of all (or some, if the target is found) of the links
 	 *         of the Wikipedia article.  
 	 * @throws IOException If the article data could not be fetched. 
 	 */
-	public static ArrayList<String> getAllLinks(String article, String target) 
+	public static HashSet<String> getAllLinks(String article, String target) 
 			throws IOException {
 		// Declare the List of all of the links
-		ArrayList<String> allLinks = new ArrayList<String>();
+		HashSet<String> allLinks = new HashSet<String>();
 		
 		// Get the URL of the Wiki Request Page and fetch the first JSON file
 		String url = WikiFetch.getLinksURL(article);

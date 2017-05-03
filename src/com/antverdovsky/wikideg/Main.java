@@ -3,6 +3,7 @@ package com.antverdovsky.wikideg;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Stack;
 
 public class Main {
@@ -62,7 +63,7 @@ public class Main {
 		// Fetch the starting list of links (note, we could also fetch the end
 		// backlinks here, however, the start links are usually shorter than
 		// the backlinks).
-		ArrayList<String> startLinks = WikiAPI.getAllLinks(start, end);
+		HashSet<String> startLinks = WikiAPI.getAllLinks(start, end);
 		
 		// If the links fetched contain the the end article, then we have a 
 		// special case where [start] -> [end], so we have one degree of
@@ -73,17 +74,17 @@ public class Main {
 		}
 		
 		// Otherwise, fetch the ending list of backlinks. 
-		ArrayList<String> endLinks = WikiAPI.getAllBacklinks(end, start);
+		HashSet<String> endLinks = WikiAPI.getAllBacklinks(end, start);
 		
 		// Special case if there is some article that is in both the starting
 		// links and the ending backlinks ([start] -> [middle] -> [end]), so
 		// we have two degrees of separation with a one hop chain.
-		ArrayList<String> common = new ArrayList<String>(startLinks);
+		HashSet<String> common = new HashSet<String>(startLinks);
 		common.retainAll(endLinks);
 		if (!common.isEmpty()) {
 			// Here, we can grab any element we want, for simplicity lets grab
 			// the first element.
-			path.push(common.get(0));
+			path.push(common.iterator().next());
 			path.push(end);
 			
 			return new Separation(2, path);
@@ -107,12 +108,12 @@ public class Main {
 			// the graph from the starting article.
 			if (startLinks.size() < endLinks.size()) {
 				// Stores the new start links
-				ArrayList<String> newStartLinks = new ArrayList<String>();
+				HashSet<String> newStartLinks = new HashSet<String>();
 				
 				// Go through all of the start links and fetch their links.
 				for (String s : startLinks) {
 					// TODO: Optimize so we don't always have to copy over...
-					ArrayList<String> sStartLinks = WikiAPI.getAllLinks(s, end);
+					HashSet<String> sStartLinks = WikiAPI.getAllLinks(s, end);
 					newStartLinks.addAll(sStartLinks);
 					
 					// Set the predecessor of all of the start links
@@ -122,7 +123,7 @@ public class Main {
 					
 					// If the links we just fetched contain something in
 					// common with the end backlinks, then we found a middle!
-					common = new ArrayList<String>(sStartLinks);
+					common = new HashSet<String>(sStartLinks);
 					common.retainAll(endLinks);
 					if (!common.isEmpty()) break;
 				}
@@ -135,13 +136,13 @@ public class Main {
 			// graph from the ending article.
 			else {			// TODO: Some code duplication going on here...
 				// Stores the new backlinks
-				ArrayList<String> newEndLinks = new ArrayList<String>();
+				HashSet<String> newEndLinks = new HashSet<String>();
 				
 				// Go through all of the backlinks and fetch their backlinks.
 				// Copy all of their backlinks into the new backlinks links.
 				for (String s : endLinks) {
 					// TODO: Optimize so we don't always have to copy over...
-					ArrayList<String> sEndLinks = WikiAPI.getAllBacklinks(s, start);
+					HashSet<String> sEndLinks = WikiAPI.getAllBacklinks(s, start);
 					newEndLinks.addAll(sEndLinks);
 					
 					// Set the successor of all of the start links
@@ -151,7 +152,7 @@ public class Main {
 					
 					// If the backlinks we just fetched contain something in
 					// common with the start links, then we found a middle!
-					common = new ArrayList<String>(sEndLinks);
+					common = new HashSet<String>(sEndLinks);
 					common.retainAll(startLinks);
 					if (!common.isEmpty()) break;
 				}
@@ -163,12 +164,12 @@ public class Main {
 			
 			// Check if there is some element in common between the links and
 			// backlinks list. If there is, we have found the middle!
-			common = new ArrayList<String>(startLinks);
+			common = new HashSet<String>(startLinks);
 			common.retainAll(endLinks);
 			if (common.size() > 0) {
 				// TODO: Return all elements, just one?
 				// Get the middle element of the Graph
-				String middle = common.get(0);
+				String middle = common.iterator().next();
 				
 				// Will store the predecessors and successors of the middle
 				// node element.

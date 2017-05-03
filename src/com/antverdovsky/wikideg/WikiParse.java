@@ -1,6 +1,7 @@
 package com.antverdovsky.wikideg;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -19,14 +20,15 @@ public class WikiParse {
 	 * equals the link, the method will append the target to the links and
 	 * halt its execution, returning an empty return string.
 	 * @param json The JSON data which is to be parsed.
-	 * @param links The links list into which the JSON data is to be appended.
+	 * @param backlinks The backlinks set into which the parsed backlinks are
+	 *                  to be appended.
 	 * @param target The target String which is to be found in the JSON data. 
 	 * @return The continue token of the JSON data, or an empty String if the
 	 *         JSON data contains no continue token, or if the target has been
 	 *         found.
 	 */
-	public static String parseBacklinks(String json, 
-			ArrayList<String> backlinks, String target) {
+	public static String parseBacklinks(
+			String json, HashSet<String> backlinks, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -40,10 +42,11 @@ public class WikiParse {
 		for (JsonElement e : jBacklinksArray) { // Foreach link
 			JsonObject jLinkObj = e.getAsJsonObject();
 			
+			// Fetch the title and add it to the backlinks set. If the title
+			// is actually the target we are looking for, we do not need to
+			// parse any more JSON data.
 			String title = jLinkObj.get("title").getAsString();
 			backlinks.add(title);
-			
-			// Halt early if target is found
 			if (title.equals(target)) return "";
 		}
 		
@@ -72,14 +75,15 @@ public class WikiParse {
 	 * equals the link, the method will append the target to the links and
 	 * halt its execution, returning an empty return string.
 	 * @param json The JSON data which is to be parsed.
-	 * @param links The links list into which the JSON data is to be appended.
+	 * @param links The links set into which the parsed links are to be 
+	 *              appended.
 	 * @param target The target String which is to be found in the JSON data. 
 	 * @return The continue token of the JSON data, or an empty String if the
 	 *         JSON data contains no continue token, or if the target has been
 	 *         found.
 	 */
-	public static String parseLinks(String json, ArrayList<String> links,
-			String target) {
+	public static String parseLinks(
+			String json, HashSet<String> links, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -105,10 +109,11 @@ public class WikiParse {
 		for (JsonElement e : jLinksArray) {
 			JsonObject jLinkObj = e.getAsJsonObject();
 			
+			// Fetch the title and add it to the backlinks set. If the title
+			// is actually the target we are looking for, we do not need to
+			// parse any more JSON data.
 			String title = jLinkObj.get("title").getAsString();
 			links.add(title);
-			
-			// Short circuit the execution if the target is found early
 			if (title.equals(target)) return "";
 		}
 		
