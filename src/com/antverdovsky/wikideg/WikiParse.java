@@ -14,15 +14,19 @@ public class WikiParse {
 	 * Parses the specified backlinks JSON data. All of the links fetched from
 	 * the JSON data are then added to the backlinks reference parameter. If
 	 * the JSON data contains a continue token, it is returned as a String,
-	 * otherwise an empty String is returned instead.
+	 * otherwise an empty String is returned instead. If the target string
+	 * is not empty, for each link fetched from the JSON data, if the target
+	 * equals the link, the method will append the target to the links and
+	 * halt its execution, returning an empty return string.
 	 * @param json The JSON data which is to be parsed.
-	 * @param backlinks The backlinks list into which the JSON data is to be
-	 *                  appended. 
+	 * @param links The links list into which the JSON data is to be appended.
+	 * @param target The target String which is to be found in the JSON data. 
 	 * @return The continue token of the JSON data, or an empty String if the
-	 *         JSON data contains no continue token.
+	 *         JSON data contains no continue token, or if the target has been
+	 *         found.
 	 */
 	public static String parseBacklinks(String json, 
-			ArrayList<String> backlinks) {
+			ArrayList<String> backlinks, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -38,6 +42,9 @@ public class WikiParse {
 			
 			String title = jLinkObj.get("title").getAsString();
 			backlinks.add(title);
+			
+			// Halt early if target is found
+			if (title.equals(target)) return "";
 		}
 		
 		// Navigate Root -> Continue. If unable, then there is no continue
@@ -60,13 +67,19 @@ public class WikiParse {
 	 * Parses the specified links JSON data. All of the links fetched from
 	 * the JSON data are then added to the links reference parameter. If
 	 * the JSON data contains a continue token, it is returned as a String,
-	 * otherwise an empty String is returned instead.
+	 * otherwise an empty String is returned instead. If the target string
+	 * is not empty, for each link fetched from the JSON data, if the target
+	 * equals the link, the method will append the target to the links and
+	 * halt its execution, returning an empty return string.
 	 * @param json The JSON data which is to be parsed.
-	 * @param links The links list into which the JSON data is to be appended. 
+	 * @param links The links list into which the JSON data is to be appended.
+	 * @param target The target String which is to be found in the JSON data. 
 	 * @return The continue token of the JSON data, or an empty String if the
-	 *         JSON data contains no continue token.
+	 *         JSON data contains no continue token, or if the target has been
+	 *         found.
 	 */
-	public static String parseLinks(String json, ArrayList<String> links) {
+	public static String parseLinks(String json, ArrayList<String> links,
+			String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -94,6 +107,9 @@ public class WikiParse {
 			
 			String title = jLinkObj.get("title").getAsString();
 			links.add(title);
+			
+			// Short circuit the execution if the target is found early
+			if (title.equals(target)) return "";
 		}
 		
 		// Navigate Root -> Continue. If unable, then there is no continue
