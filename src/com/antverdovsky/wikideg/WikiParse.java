@@ -10,68 +10,34 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class WikiParse {
-	static class LinksResult {
-		private ArrayList<String> links;    // List of all links in JSON data
-		private String lContinue;           // Continue entry in JSON data
-		
-		/**
-		 * Initializes a new Links Result instance with the specified links
-		 * and continue token.
-		 * @param links The Links.
-		 * @param cont The continue token.
-		 */
-		public LinksResult(ArrayList<String> links, String cont) {
-			this.links = links;
-			this.lContinue = cont;
-		}
-		
-		/**
-		 * Returns the Links of this LinkResult.
-		 * @return The Links List.
-		 */
-		public ArrayList<String> getLinks() {
-			return this.links;
-		}
-		
-		/**
-		 * Returns the Continue Token of this LinkResult.
-		 * @return The lContinue Token.
-		 */
-		public String getLContinue() {
-			return this.lContinue;
-		}
-	}
-	
 	/**
-	 * Parses the specified JSON data and returns an instance of the 
-	 * LinksResult class containing the list of all the backlinks in the JSON
-	 * data, as well as the continue token, if applicable. If the JSON file
-	 * has no continue entry, the continue token will be empty. If the JSON
-	 * data is invalid, null is returned.
+	 * Parses the specified backlinks JSON data. All of the links fetched from
+	 * the JSON data are then added to the backlinks reference parameter. If
+	 * the JSON data contains a continue token, it is returned as a String,
+	 * otherwise an empty String is returned instead.
 	 * @param json The JSON data which is to be parsed.
-	 * @return The LinksResult instance containing the links and the continue
-	 *         token, or null if the JSON data is invalid.
+	 * @param backlinks The backlinks list into which the JSON data is to be
+	 *                  appended. 
+	 * @return The continue token of the JSON data, or an empty String if the
+	 *         JSON data contains no continue token.
 	 */
-	public static LinksResult parseBacklinks(String json) {
-		// Create an empty ArrayList to store the Links with a capacity of 500
-		// links (maximum from one JSON data file).
-		ArrayList<String> backlinksList = new ArrayList<String>(500);
-		
+	public static String parseBacklinks(String json, 
+			ArrayList<String> backlinks) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
 		
 		// Navigate Root -> Query -> Backlinks
-		JsonElement query = root.getAsJsonObject().get("query");
-		JsonElement backlinks = query.getAsJsonObject().get("backlinks");
-		JsonArray backlinksArray = backlinks.getAsJsonArray();
+		JsonElement jQuery = root.getAsJsonObject().get("query");
+		JsonElement jBacklinks = jQuery.getAsJsonObject().get("backlinks");
+		JsonArray jBacklinksArray = jBacklinks.getAsJsonArray();
 		
 		// Move all of the titles from the JsonArray into the List
-		for (JsonElement e : backlinksArray) { // Foreach link
-			JsonObject linkObj = e.getAsJsonObject();
+		for (JsonElement e : jBacklinksArray) { // Foreach link
+			JsonObject jLinkObj = e.getAsJsonObject();
 			
-			String title = linkObj.get("title").getAsString();
-			backlinksList.add(title);
+			String title = jLinkObj.get("title").getAsString();
+			backlinks.add(title);
 		}
 		
 		// Navigate Root -> Continue. If unable, then there is no continue
@@ -87,37 +53,31 @@ public class WikiParse {
 			blCont = "";
 		}
 		
-		// Construct the Result and return
-		LinksResult result = new LinksResult(backlinksList, blCont);
-		return result;
+		return blCont;
 	}
 	
 	/**
-	 * Parses the specified JSON data and returns an instance of the 
-	 * LinksResult class containing the list of all of the links in the JSON
-	 * data, as well as the continue token, if applicable. If the JSON file
-	 * has no continue entry, the continue token will be empty. If the JSON
-	 * data is invalid, null is returned.
+	 * Parses the specified links JSON data. All of the links fetched from
+	 * the JSON data are then added to the links reference parameter. If
+	 * the JSON data contains a continue token, it is returned as a String,
+	 * otherwise an empty String is returned instead.
 	 * @param json The JSON data which is to be parsed.
-	 * @return The LinksResult instance containing the links and the continue
-	 *         token, or null if the JSON data is invalid.
+	 * @param links The links list into which the JSON data is to be appended. 
+	 * @return The continue token of the JSON data, or an empty String if the
+	 *         JSON data contains no continue token.
 	 */
-	public static LinksResult parseLinks(String json) {
-		// Create an empty ArrayList to store the Links with a capacity of 500
-		// links (maximum from one JSON data file).
-		ArrayList<String> linksList = new ArrayList<String>(500);
-		
+	public static String parseLinks(String json, ArrayList<String> links) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
 		
 		// Navigate Root -> Query -> Pages
-		JsonElement query = root.getAsJsonObject().get("query");
-		JsonElement pages = query.getAsJsonObject().get("pages");
+		JsonElement jQuery = root.getAsJsonObject().get("query");
+		JsonElement jPages = jQuery.getAsJsonObject().get("pages");
 		
 		// Get all of the Entries in the JSON file. Since we are only parsing
 		// for one web article at a time, assert that there is only one entry.
-		JsonObject pagesObj = pages.getAsJsonObject();
+		JsonObject pagesObj = jPages.getAsJsonObject();
 		Set<Entry<String, JsonElement>> eSet = pagesObj.entrySet();
 		if (eSet.size() != 1) return null;
 		
@@ -125,15 +85,15 @@ public class WikiParse {
 		JsonElement entry = eSet.iterator().next().getValue();
 		
 		// Navigate Root -> Query -> Pages -> Entry -> Links
-		JsonElement links = entry.getAsJsonObject().get("links");
-		JsonArray linksArray = links.getAsJsonArray();
+		JsonElement jLinks = entry.getAsJsonObject().get("links");
+		JsonArray jLinksArray = jLinks.getAsJsonArray();
 		
 		// Move all of the titles from the JsonArray into the List 
-		for (JsonElement e : linksArray) {
-			JsonObject linkObj = e.getAsJsonObject();
+		for (JsonElement e : jLinksArray) {
+			JsonObject jLinkObj = e.getAsJsonObject();
 			
-			String title = linkObj.get("title").getAsString();
-			linksList.add(title);
+			String title = jLinkObj.get("title").getAsString();
+			links.add(title);
 		}
 		
 		// Navigate Root -> Continue. If unable, then there is no continue
@@ -149,8 +109,6 @@ public class WikiParse {
 			plCont = "";
 		}
 		
-		// Construct the Result and return
-		LinksResult result = new LinksResult(linksList, plCont);
-		return result;
+		return plCont;
 	}
 }

@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Stack;
 
-import com.antverdovsky.wikideg.WikiParse.LinksResult;
-
 public class Main {
 	private static class Separation {
 		int numDegrees;          // Degrees of Separation
@@ -38,7 +36,7 @@ public class Main {
 			return this.path;
 		}
 	}
-	
+
 	/**
 	 * Finds the degrees of separation and path between the starting and 
 	 * ending articles.
@@ -58,16 +56,8 @@ public class Main {
 		if (start.equals(end)) return new Separation(0, path);
 		
 		// Fetch the starting and ending links
-		ArrayList<ArrayList<String>> startLinks2D = WikiAPI.getAllLinks(start);
-		ArrayList<ArrayList<String>> endLinks2D = WikiAPI.getAllBacklinks(end);
-		
-		// TODO: pass the reference to the arraylist to the WikiAPI so that
-		// we do not have to deal with a 2D list and so that we don't need to
-		// waste CPU power joining the links together.
-		ArrayList<String> startLinks = new ArrayList<String>();
-		ArrayList<String> endLinks = new ArrayList<String>();
-		for (ArrayList<String> aS : startLinks2D) startLinks.addAll(aS);
-		for (ArrayList<String> aS : endLinks2D) endLinks.addAll(aS);
+		ArrayList<String> startLinks = WikiAPI.getAllLinks(start);
+		ArrayList<String> endLinks = WikiAPI.getAllBacklinks(end);
 		
 		// Special case if the end article is in the links of the starting
 		// article, or the start article is in the backlinks of the end 
@@ -93,8 +83,9 @@ public class Main {
 		
 		return new Separation(0, new Stack<String>());
 	}
-	
+
 	public static void main(String[] args) {
+
 		try {
 			Separation s1 = findConnection("Apple", "Orange (fruit)");
 			Separation s2 = findConnection("Barack Obama", "Donald Trump");
