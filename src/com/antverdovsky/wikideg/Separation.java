@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.Stack;
 
 public class Separation {
-	int numDegrees;          // Degrees of Separation
-	Stack<String> path;      // The path from start to end
+	private int numDegrees;          // Degrees of Separation
+	private Stack<String> path;      // The path from start to end
 	
 	/**
 	 * Returns the number of degrees of separation between two articles.
@@ -39,36 +39,30 @@ public class Separation {
 	 */
 	public static Separation getSeparation(String start, String end)
 				throws IOException {
-		// Create a Stack with the starting article which will be used to
-		// store the path, and zero degrees of separation.
-		int degrees = 0;
-		Stack<String> path = new Stack<String>();
-		path.push(start);
+		Separation separation = null;
 		
-		// Special case if [start] == [end] -> Return 0 degrees of separation
-		// and a path containing the starting article.
-		if (start.equals(end)) return new Separation(degrees, path);
+		// Check if there is a zero degree separation between start and end.
+		// If so, return it!
+		separation = Separation.getSeparation0(start, end);
+		if (separation != null) return separation;
 		
-		++degrees; // If above failed, we are at >= 1 degree of separation
+		// Check if there is a one degree separation between start and end.
+		// If so, return it! If not, at least we get the list of all of the
+		// links to which the starting article links to.
+		HashSet<String> links = new HashSet<String>();
+		separation = Separation.getSeparation1(start, end, links);
+		if (separation != null) return separation;
 		
-		// Fetch the starting list of links (note, we could also fetch the end
-		// backlinks here, however, the start links are usually shorter than
-		// the backlinks).
-		HashSet<String> startLinks = WikiAPI.getAllLinks(start, end);
+		// Check if there is a two degree separation between start and end.
+		// If so, return it! If not, we will get the list of all of the 
+		// backlinks.
+		HashSet<String> backlinks = new HashSet<String>();
+		separation = Separation.getSeparation2(start, end, links, backlinks);
+		if (separation != null) return separation;
 		
-		// If the links fetched contain the the end article, then we have a 
-		// special case where [start] -> [end], so we have one degree of
-		// separation, with a direct path.
-		if (startLinks.contains(end)) {
-			path.push(end);
-			return new Separation(degrees, path);
-		}
+		return null;
 		
-		++degrees; // If above failed, we are at >= 2 degrees of separation
-		
-		// Otherwise, fetch the ending list of backlinks. 
-		HashSet<String> endLinks = WikiAPI.getAllBacklinks(end, start);
-		
+/*			TODO WIP
 		// Special case if there is some article that is in both the starting
 		// links and the ending backlinks ([start] -> [middle] -> [end]), so
 		// we have two degrees of separation with a one hop chain.
@@ -202,6 +196,7 @@ public class Separation {
 			
 			++degrees; // For each iteration, the separation increases
 		}
+*/
 	}
 	
 	/**
@@ -213,5 +208,102 @@ public class Separation {
 	private Separation(int numD, Stack<String> path) {
 		this.numDegrees = numD;
 		this.path = path;
+	}
+	
+	/**
+	 * Checks if the separation between the start and end articles is zero
+	 * degrees of separation. If so, an instance of the separation class is
+	 * returned. If the separation between the start and end articles is not
+	 * zero, null is returned. A zero degree separation is only possible if
+	 * the starting article's title is equal to the end article's title.
+	 * @param start The title of the start article.
+	 * @param end The title of the end article.
+	 * @return An instance of separation containing the path between start
+	 *         and end, or null if no one degree separation exists.
+	 */
+	private static Separation getSeparation0(String start, String end) {
+		Stack<String> path = new Stack<String>();
+		path.push(start);
+		
+		// Return 0 degrees of separation if the start article equals the
+		// end article, null otherwise.
+		return start.equals(end) ? new Separation(0, path) : null;
+	}
+	
+	/**
+	 * Checks if the separation between the start and end articles is one
+	 * degree of separation. If so, an instance of the separation class is
+	 * returned. If the separation between the start and end articles is not
+	 * one, null is returned. A one degree separation is only possible if the
+	 * links of the start article contain the end article. Regardless of 
+	 * whether the degrees of separation are one, the links hash set will be
+	 * filled with all of the links of the starting article.
+	 * @param start The title of the start article.
+	 * @param end The title of the end article.
+	 * @param links The links of the starting article. This hash set should be
+	 *              empty and will be filled using this method.
+	 * @return An instance of separation containing the path between start
+	 *         and end, or null if no one degree separation exists.
+	 * @throws IOException If the links could not be properly fetched from the
+	 *                     starting article.
+	 */
+	private static Separation getSeparation1(String start, String end,
+			HashSet<String> links) throws IOException {
+		Stack<String> path = new Stack<String>();
+		path.push(start);
+		path.push(end); // Assuming we will find a one degree separation
+		
+		// Get the links of the starting article, and short circuit halt if
+		// the end article is found.
+		links.addAll(WikiAPI.getAllLinks(start, end));
+		
+		// If we find a one degree separation, return the separation instance,
+		// or null otherwise.
+		return links.contains(end) ? new Separation(1, path) : null;
+	}
+	
+	/**
+	 * Checks if the separation between the start and end articles is two
+	 * degrees of separation. If so, an instance of the separation class is
+	 * returned. If the separation between the start and end articles is not
+	 * two, null is returned. A two degree separation is only possible if the
+	 * links of the starting article and the backlinks of the ending article
+	 * contain some common middle article. Regardless of whether the degrees 
+	 * of separation are two, the backlinks hash set will be filled with all
+	 * of the backlinks of the ending article. 
+	 * @param start The title of the start article.
+	 * @param end The title of the end article.
+	 * @param links The backlinks of the ending article. This hash set should 
+	 *              be empty and will be filled using this method.
+	 * @return An instance of separation containing the path between start
+	 *         and end, or null if no two degree separation exists.
+	 * @throws IOException If the links could not be properly fetched from the
+	 *                     starting article.
+	 */
+	private static Separation getSeparation2(String start, String end,
+			HashSet<String> links, HashSet<String> backlinks) 
+			throws IOException {
+		Stack<String> path = new Stack<String>();
+		path.push(start);
+		
+		// Get the backlinks of the ending article (short circuit halting will
+		// never happen here since that would imply one degree of separation).
+		HashSet<String> common = WikiAPI.getAllBacklinks(end, start);
+		backlinks.addAll(common);
+		
+		// Find any articles that backlinks has in common with the links. This
+		// implies that there exists some middle article such that we can go
+		// from start -> middle -> end.
+		common.retainAll(links);
+		
+		// If no middle articles exist, return null
+		if (common.isEmpty()) return null;
+		
+		// Fetch some random article from the common set and build a path with
+		// it, returning a separation of two degrees.
+		String middle = common.iterator().next();
+		path.push(middle);
+		path.push(end);
+		return new Separation(2, path);
 	}
 }
