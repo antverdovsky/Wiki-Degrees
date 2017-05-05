@@ -10,12 +10,23 @@ public class Separation {
 	private Stack<String> path;           // Path by article names
 	private Stack<String> embeddedPath;   // Path by embedded article names
 	
+	private static LinksFetcher linksFetcher = new LinksFetcher();
+	private static BacklinksFetcher backlinksFetcher = new BacklinksFetcher();
+	
 	/**
 	 * Returns the number of degrees of separation between two articles.
 	 * @return The degrees of separation.
 	 */
 	public int getNumDegrees() {
 		return this.numDegrees;
+	}
+	
+	/**
+	 * Returns the embedded path between two articles.
+	 * @return The embedded path.
+	 */
+	public Stack<String> getEmbeddedPath() {
+		return this.embeddedPath;
 	}
 	
 	/**
@@ -162,7 +173,7 @@ public class Separation {
 		
 		// Get the links of the starting article, and short circuit halt if
 		// the end article is found.
-		links.addAll(WikiAPI.getAllLinks(start, end));
+		links.addAll(linksFetcher.getLinks(start, end));
 		
 		// If we find a one degree separation, return the separation instance,
 		// or null otherwise.
@@ -196,7 +207,7 @@ public class Separation {
 		
 		// Get the backlinks of the ending article (short circuit halting will
 		// never happen here since that would imply one degree of separation).
-		HashSet<String> common = WikiAPI.getAllBacklinks(end, start);
+		HashSet<String> common = backlinksFetcher.getLinks(end, start);
 		backlinks.addAll(common);
 		
 		// Find any articles that backlinks has in common with the links. This
@@ -251,57 +262,11 @@ public class Separation {
 		while (true) { // Until we have found a link
 			// Build the graph from the perspective of the smaller data set.
 			if (links.size() <= backlinks.size()) {
-				HashSet<String> newLinks = new HashSet<String>();
-				
-				for (String link : links) { // Go through links
-					// Get all of the links of this link
-					HashSet<String> linksOf = WikiAPI.getAllLinks(link, end);
-					newLinks.addAll(linksOf);
-					
-					// Set this link as the predecessor of all of the links of
-					// this link and add the link to the newLinks list, only
-					// if we have not yet seen this link!
-					for (String linkOf : linksOf)
-						if (!predecessors.containsKey(linkOf))
-							predecessors.put(linkOf, link);
-						
-					// Check if any links of this link are contained in the
-					// backlinks. If so, then this link leads to a backlink
-					// and so it is a middle link and we have found a path!
-					HashSet<String> common = new HashSet<String>(linksOf);
-					common.retainAll(backlinks);
-					if (!common.isEmpty()) break;
-				}
-				
-				// Now replace the old links list with the new links list
-				links = newLinks;
+				links = Separation.getSeparation3GrowGraph(links,
+						backlinks, end, predecessors, linksFetcher);
 			} else {
-				HashSet<String> newBacklinks = new HashSet<String>();
-				
-				for (String backlink : backlinks) { // Go through backlinks
-					// Get all of the backlinks of this backlink and add them 
-					// to the new links set.
-					HashSet<String> backlinksOf = 
-							WikiAPI.getAllBacklinks(backlink, start);
-					newBacklinks.addAll(backlinksOf);
-					
-					// Set this backlink as the successor of all of the 
-					// backlinks of this backlink.
-					for (String backlinkOf : backlinksOf)
-						if (!successors.containsKey(backlinkOf))
-							successors.put(backlinkOf, backlink);
-					
-					// Check if any backlinks of this backlink are contained 
-					// in the links. If so, then this backlink leads to a link
-					// and so it is a middle link and we have found a path!
-					HashSet<String> common = new HashSet<String>(backlinksOf);
-					common.retainAll(links);
-					if (!common.isEmpty()) break;
-				}
-				
-				// Now replace the old backlinks list with the new backlinks 
-				// list.
-				backlinks = newBacklinks;
+				backlinks = Separation.getSeparation3GrowGraph(backlinks,
+						links, start, successors, backlinksFetcher);
 			}
 			
 			// Check if there is some element in common between the links and
@@ -354,5 +319,51 @@ public class Separation {
 				++degrees;
 			}
 		}
+	}
+	
+	/**
+	 * Grows the graph from one side in the separation three+ degrees 
+	 * algorithm.
+	 * @param links The links for which we are to grow the graph. For each
+	 *              link in the set, this will fetch the (back)links of the
+	 *              link and add them to a set which will be returned at the
+	 *              end of the method.
+	 * @param otherLinks The hash set of the other side of the graph (i.e. if
+	 *                   the links set is backlinks, this is the links). 
+	 * @param target The target link. If this is found when fetching new links
+	 *               the method will halt early.
+	 * @param map The predecessor map (for links) or the successor map (for
+	 *            backlinks).
+	 * @param fetcher The fetcher to be used when getting the links or 
+	 *                backlinks.
+	 * @return The set of (back)links.
+	 * @throws IOException If the links could not be properly fetched.
+	 */
+	private static HashSet<String> getSeparation3GrowGraph(
+			HashSet<String> links, HashSet<String> otherLinks, String target,
+			HashMap<String, String> map, AbstractLinkFetcher fetcher) 
+			throws IOException {
+		HashSet<String> newLinks = new HashSet<String>(); // New links set
+		
+		for (String link : links) { // Go through links
+			// Get all of the (back)links of this link
+			HashSet<String> linksOf = linksFetcher.getLinks(link, target);
+			newLinks.addAll(linksOf);
+			
+			// Set this link as the predecessor or successor of all of the 
+			// (back)links of this link and add the link to the newLinks list,
+			// only if we have not yet seen this link!
+			for (String linkOf : linksOf)
+				if (!map.containsKey(linkOf)) map.put(linkOf, link);
+				
+			// Check if any links of this link are contained in the
+			// backlinks. If so, then this link leads to a backlink
+			// and so it is a middle link and we have found a path!
+			HashSet<String> common = new HashSet<String>(linksOf);
+			common.retainAll(otherLinks);
+			if (!common.isEmpty()) return newLinks;
+		}
+		
+		return newLinks;
 	}
 }
