@@ -6,8 +6,9 @@ import java.util.HashSet;
 import java.util.Stack;
 
 public class Separation {
-	private int numDegrees;          // Degrees of Separation
-	private Stack<String> path;      // The path from start to end
+	private int numDegrees;               // Degrees of Separation
+	private Stack<String> path;           // Path by article names
+	private Stack<String> embeddedPath;   // Path by embedded article names
 	
 	/**
 	 * Returns the number of degrees of separation between two articles.
@@ -64,6 +65,9 @@ public class Separation {
 		// Last chance is checking for 3+ degrees of separation. If that
 		// returns null also then this path cannot be constructed.
 		separation = Separation.getSeparation3(start, end, links, backlinks);
+		if (separation == null) return null; 
+		
+		separation.embeddedPath = Separation.getEmbeddedPath(separation.path);
 		return separation;
 	}
 	
@@ -76,6 +80,41 @@ public class Separation {
 	private Separation(int numD, Stack<String> path) {
 		this.numDegrees = numD;
 		this.path = path;
+	}
+	
+	/**
+	 * Converts the specified path to an embedded path and returns it. An
+	 * embedded path will contain the names of each node in the specified
+	 * path as it is present in the predecessor node, since Wikipedia
+	 * sometimes uses a different article name when it is embedded in an
+	 * article.
+	 * @param path The standard path.
+	 * @return The embedded path.
+	 * @throws IOException If there is an error fetching the export for any
+	 *                     of the articles in the path.
+	 */
+	public static Stack<String> getEmbeddedPath(Stack<String> path) 
+			throws IOException {
+		// Create a stack to store the embedded path.
+		Stack<String> embeddedPath = new Stack<String>();
+		
+		// Foreach article in the standard path
+		for (int i = 0; i < path.size() - 1; ++i) {
+			// Get the current article title and the next article title
+			String current = path.get(i);
+			String next = path.get(i + 1);
+			
+			// Get the full export data of the current article
+			String url = WikiFetch.getExportURL(current);
+			String data = WikiFetch.getData(url);
+			
+			// Get the name of the next article as it appears in the current
+			// article and push it onto the stack.
+			embeddedPath.push(WikiParse.parseEmbeddedArticle(data, next));
+		}
+		
+		// Return the embedded path
+		return embeddedPath;
 	}
 	
 	/**

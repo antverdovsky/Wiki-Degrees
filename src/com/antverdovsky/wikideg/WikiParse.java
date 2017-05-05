@@ -11,6 +11,41 @@ import com.google.gson.JsonParser;
 
 public class WikiParse {
 	/**
+	 * Finds the embedded article name of the target article in the specified
+	 * export data.
+	 * @param data The export data.
+	 * @param target The name of the article which should be embedded in the
+	 *               export data.
+	 * @return The embedded title of the target article.
+	 */
+	public static String parseEmbeddedArticle(String data, String target) {
+		// Find where in the current article, the name of the next
+		// article is embedded. Trim the data so that we have the string
+		// containing the name of the next article as it is embedded,
+		// along with all of the leftover information.
+		String preEmbeddedName = "[[" + target + "|";
+		int indexOfEmbeddedNameStart = data.indexOf(preEmbeddedName);
+		indexOfEmbeddedNameStart += preEmbeddedName.length();
+		data = data.substring(indexOfEmbeddedNameStart);
+
+		// This will be true if the indexOfEmbeddedNameStart was less than
+		// zero, period to the pre embedded name string length being added
+		// on. In this case, the current article references the next
+		// article, directly, so we can return the next article name.
+		if (indexOfEmbeddedNameStart < preEmbeddedName.length()) 
+			return target;
+
+		// Now get the index of where the embedded name ends (on Wikipedia
+		// this is signified by the double brackets) and trim so that we
+		// only have the embedded name leftover.
+		int indexOfEmbeddedNameEnd = data.indexOf("]]");
+		data = data.substring(0, indexOfEmbeddedNameEnd);
+
+		// Return the embedded name
+		return data;
+	}
+
+	/**
 	 * Parses the specified backlinks JSON data. All of the links fetched from
 	 * the JSON data are then added to the backlinks reference parameter. If
 	 * the JSON data contains a continue token, it is returned as a String,
@@ -31,16 +66,16 @@ public class WikiParse {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
-		
+
 		// Navigate Root -> Query -> Backlinks
 		JsonElement jQuery = root.getAsJsonObject().get("query");
 		JsonElement jBacklinks = jQuery.getAsJsonObject().get("backlinks");
 		JsonArray jBacklinksArray = jBacklinks.getAsJsonArray();
-		
+
 		// Move all of the titles from the JsonArray into the List
 		for (JsonElement e : jBacklinksArray) { // Foreach link
 			JsonObject jLinkObj = e.getAsJsonObject();
-			
+
 			// Fetch the title and add it to the backlinks set. If the title
 			// is actually the target we are looking for, we do not need to
 			// parse any more JSON data.
@@ -48,7 +83,7 @@ public class WikiParse {
 			backlinks.add(title);
 			if (title.equals(target)) return "";
 		}
-		
+
 		// Navigate Root -> Continue. If unable, then there is no continue
 		// token, so make the continue token empty.
 		String blCont;
@@ -61,10 +96,10 @@ public class WikiParse {
 		} else {
 			blCont = "";
 		}
-		
+
 		return blCont;
 	}
-	
+
 	/**
 	 * Parses the specified links JSON data. All of the links fetched from
 	 * the JSON data are then added to the links reference parameter. If
@@ -86,28 +121,28 @@ public class WikiParse {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
-		
+
 		// Navigate Root -> Query -> Pages
 		JsonElement jQuery = root.getAsJsonObject().get("query");
 		JsonElement jPages = jQuery.getAsJsonObject().get("pages");
-		
+
 		// Get all of the Entries in the JSON file. Since we are only parsing
 		// for one web article at a time, assert that there is only one entry.
 		JsonObject pagesObj = jPages.getAsJsonObject();
 		Set<Entry<String, JsonElement>> eSet = pagesObj.entrySet();
 		if (eSet.size() != 1) return null;
-		
+
 		// Fetch the single entry from the entry set
 		JsonElement entry = eSet.iterator().next().getValue();
-		
+
 		// Navigate Root -> Query -> Pages -> Entry -> Links
 		JsonElement jLinks = entry.getAsJsonObject().get("links");
 		JsonArray jLinksArray = jLinks.getAsJsonArray();
-		
+
 		// Move all of the titles from the JsonArray into the List 
 		for (JsonElement e : jLinksArray) {
 			JsonObject jLinkObj = e.getAsJsonObject();
-			
+
 			// Fetch the title and add it to the backlinks set. If the title
 			// is actually the target we are looking for, we do not need to
 			// parse any more JSON data.
@@ -115,7 +150,7 @@ public class WikiParse {
 			links.add(title);
 			if (title.equals(target)) return "";
 		}
-		
+
 		// Navigate Root -> Continue. If unable, then there is no continue
 		// token, so make the continue token empty.
 		String plCont;
@@ -128,7 +163,7 @@ public class WikiParse {
 		} else {
 			plCont = "";
 		}
-		
+
 		return plCont;
 	}
 }

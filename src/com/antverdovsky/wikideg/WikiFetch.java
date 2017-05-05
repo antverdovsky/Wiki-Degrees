@@ -36,6 +36,21 @@ public class WikiFetch {
 	}
 	
 	/**
+	 * Gets the URL of the special export data of the article with the
+	 * specified title.
+	 * @param name The title of the article.
+	 * @return The URL containing the export data.
+	 */
+	public static String getExportURL(String name) {
+		// Construct the URL onto which the title of the page will be added.
+		// This requests a full export of the page 
+		final String PRE_TITLE_URL = "https://en.wikipedia.org/wiki/" +
+				"Special:Export/";
+		
+		return WikiFetch.appendURL(PRE_TITLE_URL, name);
+	}
+	
+	/**
 	 * Gets the URL of the Wiki Request Page containing the referenced links
 	 * of the page with the specified name.
 	 * @param name The name of the page for which the referenced links page is
