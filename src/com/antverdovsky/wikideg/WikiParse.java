@@ -90,6 +90,7 @@ public class WikiParse {
 		// Navigate Root -> Query -> Backlinks
 		JsonElement jQuery = root.getAsJsonObject().get("query");
 		JsonElement jBacklinks = jQuery.getAsJsonObject().get("backlinks");
+		if (jBacklinks == null) return "";
 		JsonArray jBacklinksArray = jBacklinks.getAsJsonArray();
 
 		// Move all of the titles from the JsonArray into the List
@@ -157,6 +158,7 @@ public class WikiParse {
 
 		// Navigate Root -> Query -> Pages -> Entry -> Links
 		JsonElement jLinks = entry.getAsJsonObject().get("links");
+		if (jLinks == null) return "";
 		JsonArray jLinksArray = jLinks.getAsJsonArray();
 
 		// Move all of the titles from the JsonArray into the List 

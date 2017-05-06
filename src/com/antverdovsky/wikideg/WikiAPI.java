@@ -16,7 +16,7 @@ interface AbstractLinkFetcher {
 	 * @throws IOException If the article data could not be fetched.
 	 */
 	public HashSet<String> getLinks(String article, String target) throws
-	IOException;
+			IOException;
 }
 
 class LinksFetcher implements AbstractLinkFetcher {
@@ -59,6 +59,7 @@ class LinksFetcher implements AbstractLinkFetcher {
 }
 
 class BacklinksFetcher implements AbstractLinkFetcher {
+	@Override
 	/**
 	 * Gets all (or some, if the target is found) of the backlinks on a 
 	 * Wikipedia article of the specified name.
@@ -70,7 +71,6 @@ class BacklinksFetcher implements AbstractLinkFetcher {
 	 *         the Wikipedia article.
 	 * @throws IOException If the article data could not be fetched.
 	 */
-	@Override
 	public HashSet<String> getLinks(String article, String target) 
 			throws IOException {
 		// Declare the set of all of the Backlinks

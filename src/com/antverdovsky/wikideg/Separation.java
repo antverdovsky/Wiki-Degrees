@@ -66,12 +66,18 @@ public class Separation {
 		separation = Separation.getSeparation1(start, end, links);
 		if (separation != null) return separation;
 		
+		// No path possible because the start contains no links!
+		if (links.isEmpty()) return null;
+		
 		// Check if there is a two degree separation between start and end.
 		// If so, return it! If not, we will get the list of all of the 
 		// backlinks.
 		HashSet<String> backlinks = new HashSet<String>();
 		separation = Separation.getSeparation2(start, end, links, backlinks);
 		if (separation != null) return separation;
+		
+		// No path possible because the end contains no backlinks!
+		if (backlinks.isEmpty()) return null;
 		
 		// Last chance is checking for 3+ degrees of separation. If that
 		// returns null also then this path cannot be constructed.
@@ -347,14 +353,15 @@ public class Separation {
 		
 		for (String link : links) { // Go through links
 			// Get all of the (back)links of this link
-			HashSet<String> linksOf = linksFetcher.getLinks(link, target);
+			HashSet<String> linksOf = fetcher.getLinks(link, target);
 			newLinks.addAll(linksOf);
 			
 			// Set this link as the predecessor or successor of all of the 
 			// (back)links of this link and add the link to the newLinks list,
 			// only if we have not yet seen this link!
 			for (String linkOf : linksOf)
-				if (!map.containsKey(linkOf)) map.put(linkOf, link);
+				if (!map.containsKey(linkOf)) 
+					map.put(linkOf, link);
 				
 			// Check if any links of this link are contained in the
 			// backlinks. If so, then this link leads to a backlink
