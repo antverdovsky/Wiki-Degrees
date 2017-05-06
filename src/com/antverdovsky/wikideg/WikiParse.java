@@ -1,6 +1,6 @@
 package com.antverdovsky.wikideg;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -82,7 +82,7 @@ public class WikiParse {
 	 *         found.
 	 */
 	public static String parseBacklinks(
-			String json, HashSet<String> backlinks, String target) {
+			String json, ArrayList<String> backlinks, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -138,7 +138,7 @@ public class WikiParse {
 	 *         found.
 	 */
 	public static String parseLinks(
-			String json, HashSet<String> links, String target) {
+			String json, ArrayList<String> links, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);

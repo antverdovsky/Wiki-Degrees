@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Stack;
 
 import org.junit.Test;
@@ -73,7 +73,7 @@ public class SeparationTest {
 			current = sepPath.get(i);
 			next = sepPath.get(i + 1);
 			
-			HashSet<String> links = new HashSet<String>();
+			ArrayList<String> links = new ArrayList<String>();
 			try { links = new LinksFetcher().getLinks(current, next); }
 			catch (IOException e) {
 				e.printStackTrace();

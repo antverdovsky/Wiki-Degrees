@@ -1,9 +1,12 @@
 package com.antverdovsky.wikideg;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Separation {
 	// Fetchers for Links and Backlinks.
@@ -18,13 +21,13 @@ public class Separation {
 	private String startArticle;          // The article where the path starts
 	private String endArticle;            // The article where the path ends
 	
-	private HashSet<String> links;        // Links built from start node
-	private HashSet<String> backlinks;    // Backlinks built from end node
+	private List<String> links;           // Links built from start node
+	private List<String> backlinks;       // Backlinks built from end node
 	
-	private HashMap<String, String>       // Predecessors of each link in the 
-			predecessors;                 // links set.
-	private HashMap<String, String>       // Successors of each backlink in 
-			successors;                   // the backlinks set.
+	private ConcurrentHashMap<String, String> 
+			predecessors; // Predecessors of each link in the links set
+	private ConcurrentHashMap<String, String>        
+			successors;   // Successors of each backlink in the backlinks set
 	
 	/**
 	 * Creates a new Separation class and computes the path from the starting
@@ -43,10 +46,12 @@ public class Separation {
 		this.embeddedPath = new Stack<String>();
 		this.pathExists = false;
 		
-		this.links = new HashSet<String>();
-		this.backlinks = new HashSet<String>();
-		this.predecessors = new HashMap<String, String>();
-		this.successors = new HashMap<String, String>();
+		this.links = Collections.synchronizedList(
+				new ArrayList<String>());
+		this.backlinks = Collections.synchronizedList(
+				new ArrayList<String>());
+		this.predecessors = new ConcurrentHashMap<String, String>();
+		this.successors = new ConcurrentHashMap<String, String>();
 		
 		// Try to find a zero degree of separation path
 		this.pathExists = this.getSeparation0();
@@ -160,7 +165,7 @@ public class Separation {
 		
 		// Get the links of the starting article, and short circuit halt if
 		// the end article is found.
-		HashSet<String> newLinks = linksFetcher.getLinks(this.startArticle,
+		ArrayList<String> newLinks = linksFetcher.getLinks(this.startArticle,
 				this.endArticle);
 		this.links.addAll(newLinks);
 		
@@ -188,7 +193,7 @@ public class Separation {
 		
 		// Get the backlinks of the ending article (short circuit halting will
 		// never happen here since that would imply one degree of separation).
-		HashSet<String> common = backlinksFetcher.getLinks(this.endArticle, 
+		ArrayList<String> common = backlinksFetcher.getLinks(this.endArticle, 
 				this.startArticle);
 		backlinks.addAll(common);
 		
@@ -234,7 +239,7 @@ public class Separation {
 			// Check if there is some element in common between the links and
 			// backlinks. If so, then we found a path! Otherwise, we must
 			// repeat the loop though the number of degrees has now increased.
-			HashSet<String> common = new HashSet<String>(this.links);
+			ArrayList<String> common = new ArrayList<String>(this.links);
 			common.retainAll(this.backlinks);
 			if (!common.isEmpty()) {
 				// Get some random element from the common list and mark it
@@ -293,23 +298,25 @@ public class Separation {
 	 * @return The new set of (back)links.
 	 * @throws IOException If the links could not be properly fetched.
 	 */
-	private HashSet<String> getSeparation3GrowGraph(
+	private ArrayList<String> getSeparation3GrowGraph(
 			AbstractLinkFetcher fetcher) throws IOException {
-		HashSet<String> newLinks = new HashSet<String>(); // New links set
+		ArrayList<String> newLinks = new ArrayList<String>(); // New links set
 		
 		// If the parameter was a links fetcher then we need to build the
 		// graph from the starting node. Otherwise, set up the parameters to
 		// build the graph from the ending node.
 		boolean isStartSide = fetcher == Separation.linksFetcher;	
 		String target = isStartSide ? this.endArticle : this.startArticle;
-		HashSet<String> thisSide = isStartSide ? this.links : this.backlinks;
-		HashSet<String> otherSide = isStartSide ? this.backlinks : this.links;
-		HashMap<String, String> map = isStartSide ? 
+		List<String> thisSide = isStartSide ? this.links : this.backlinks;
+		List<String> otherSide = isStartSide ? this.backlinks : this.links;
+		ConcurrentHashMap<String, String> map = isStartSide ? 
 				this.predecessors : this.successors;
 
 		for (String link : thisSide) { // Go through links
+			System.out.println(link);
+			
 			// Get all of the (back)links of this link
-			HashSet<String> linksOf = fetcher.getLinks(link, target);
+			ArrayList<String> linksOf = fetcher.getLinks(link, target);
 			newLinks.addAll(linksOf);
 			
 			// Set this link as the predecessor or successor of all of the 
@@ -322,7 +329,7 @@ public class Separation {
 			// Check if any links of this link are contained in the
 			// backlinks. If so, then this link leads to a backlink
 			// and so it is a middle link and we have found a path!
-			HashSet<String> common = new HashSet<String>(linksOf);
+			ArrayList<String> common = new ArrayList<String>(linksOf);
 			common.retainAll(otherSide);
 			if (!common.isEmpty()) return newLinks;
 		}

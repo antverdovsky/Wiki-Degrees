@@ -1,7 +1,7 @@
 package com.antverdovsky.wikideg;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.ArrayList;
 
 interface AbstractLinkFetcher {
 	/**
@@ -15,7 +15,7 @@ interface AbstractLinkFetcher {
 	 *         Wikipedia article.
 	 * @throws IOException If the article data could not be fetched.
 	 */
-	public HashSet<String> getLinks(String article, String target) throws
+	public ArrayList<String> getLinks(String article, String target) throws
 			IOException;
 }
 
@@ -32,10 +32,10 @@ class LinksFetcher implements AbstractLinkFetcher {
 	 *         of the Wikipedia article.  
 	 * @throws IOException If the article data could not be fetched. 
 	 */
-	public HashSet<String> getLinks(String article, String target) 
+	public ArrayList<String> getLinks(String article, String target) 
 			throws IOException {
 		// Declare the List of all of the links
-		HashSet<String> allLinks = new HashSet<String>();
+		ArrayList<String> allLinks = new ArrayList<String>();
 
 		// Get the URL of the Wiki Request Page and fetch the first JSON file
 		String url = WikiFetch.getLinksURL(article);
@@ -71,10 +71,10 @@ class BacklinksFetcher implements AbstractLinkFetcher {
 	 *         the Wikipedia article.
 	 * @throws IOException If the article data could not be fetched.
 	 */
-	public HashSet<String> getLinks(String article, String target) 
+	public ArrayList<String> getLinks(String article, String target) 
 			throws IOException {
 		// Declare the set of all of the Backlinks
-		HashSet<String> allBacklinks = new HashSet<String>();
+		ArrayList<String> allBacklinks = new ArrayList<String>();
 
 		// Get the URL of the Wiki Request Page and fetch the first JSON file
 		String url = WikiFetch.getBacklinksURL(article);
