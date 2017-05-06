@@ -7,7 +7,12 @@ import java.util.List;
 
 public class Main {
 	static class Downloader implements Runnable {
+		private static volatile boolean hasFoundCommon = false;
+		
 		ArrayList<String> myTask;
+		static ArrayList<String> otherList = new ArrayList<String>(); //todo
+		static String target = ""; 
+		
 		List<String> writeTo;			// thread safe!
 		
 		public Downloader(ArrayList<String> task, List<String> writeTo) {
@@ -25,8 +30,18 @@ public class Main {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-//				System.out.println(s);
+
 				this.writeTo.addAll(linksOf);
+				
+				if (linksOf.contains(target)) {
+					Downloader.hasFoundCommon = true;
+				}
+				
+				linksOf.retainAll(otherList);
+				if (!linksOf.isEmpty()) 
+					Downloader.hasFoundCommon = true;
+				
+				if (Downloader.hasFoundCommon) break;
 			}
 		}
 	}
@@ -39,12 +54,18 @@ public class Main {
 			ArrayList<String> linksOf = (new LinksFetcher()).getLinks(s, "");
 			System.out.println(s);
 			ret.addAll(linksOf);
+			
+			if (linksOf.contains("Orange (fruit)")) {
+				break;
+			}
 		}
 		
 		return ret;
 	}
 	
 	private static List<String> multiThread() throws IOException {
+		Downloader.target = "Orange (fruit)";
+		
 		ArrayList<String> links = (new LinksFetcher()).getLinks("Apple", "");
 		List<String> ret = Collections.synchronizedList(new ArrayList<String>());
 		System.out.println(links);
@@ -82,7 +103,7 @@ public class Main {
 	}
 	
 	public static void main(String[] args) {
-		int i = 1;
+		int i = 0;
 		
 		if (i == 0) {
 			try {
