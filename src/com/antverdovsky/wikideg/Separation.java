@@ -6,12 +6,71 @@ import java.util.HashSet;
 import java.util.Stack;
 
 public class Separation {
+	// Fetchers for Links and Backlinks.
+	private static LinksFetcher linksFetcher = new LinksFetcher();
+	private static BacklinksFetcher backlinksFetcher = new BacklinksFetcher();
+	
 	private int numDegrees;               // Degrees of Separation
 	private Stack<String> path;           // Path by article names
 	private Stack<String> embeddedPath;   // Path by embedded article names
+	private boolean pathExists;           // Does a path exist?
 	
-	private static LinksFetcher linksFetcher = new LinksFetcher();
-	private static BacklinksFetcher backlinksFetcher = new BacklinksFetcher();
+	private String startArticle;          // The article where the path starts
+	private String endArticle;            // The article where the path ends
+	
+	private HashSet<String> links;        // Links built from start node
+	private HashSet<String> backlinks;    // Backlinks built from end node
+	
+	private HashMap<String, String>       // Predecessors of each link in the 
+			predecessors;                 // links set.
+	private HashMap<String, String>       // Successors of each backlink in 
+			successors;                   // the backlinks set.
+	
+	/**
+	 * Creates a new Separation class and computes the path from the starting
+	 * article to the ending article.
+	 * @param start The start article.
+	 * @param end The end article.
+	 * @throws IOException If there is an error fetching the links or
+	 *                     backlinks for any articles.
+	 */
+	public Separation(String start, String end) throws IOException {
+		this.startArticle = start;
+		this.endArticle = end;
+		
+		this.numDegrees = 0;
+		this.path = new Stack<String>();
+		this.embeddedPath = new Stack<String>();
+		this.pathExists = false;
+		
+		this.links = new HashSet<String>();
+		this.backlinks = new HashSet<String>();
+		this.predecessors = new HashMap<String, String>();
+		this.successors = new HashMap<String, String>();
+		
+		// Try to find a zero degree of separation path
+		this.pathExists = this.getSeparation0();
+		if (this.pathExists) return;
+		
+		// Try to find a one degree of separation path
+		this.pathExists = this.getSeparation1();
+		if (this.pathExists) return;
+		
+		// If the starting article contains no embedded links, no path is
+		// possible.
+		if (this.links.isEmpty()) return;
+		
+		// Try to find a two degree of separation path
+		this.pathExists = this.getSeparation2();
+		if (this.pathExists) return;
+		
+		// If the ending article contains no backlinks that link to it, no
+		// path is possible.
+		if (this.backlinks.isEmpty()) return;
+		
+		// Try to find a three or more degree of separation path
+		this.pathExists = this.getSeparation3();
+	}
 	
 	/**
 	 * Returns the number of degrees of separation between two articles.
@@ -36,69 +95,7 @@ public class Separation {
 	public Stack<String> getPath() {
 		return this.path;
 	}
-	
-	/**
-	 * Finds a separation between the specified start and end articles. The
-	 * path is guaranteed to be the shortest path, though there may be other
-	 * paths of the same length as the one returned.
-	 * @param start The starting article title.
-	 * @param end The ending article title.
-	 * @return A separation instance containing the degrees of separation and
-	 *         the path from the starting article to the ending article. If no
-	 *         path exists between the start and end article, null will be
-	 *         returned.
-	 * @throws IOException If there occurs an error fetching the articles of
-	 *                     either the starting or ending article. 
-	 */
-	public static Separation getSeparation(String start, String end)
-				throws IOException {
-		Separation separation = null;
-		
-		// Check if there is a zero degree separation between start and end.
-		// If so, return it!
-		separation = Separation.getSeparation0(start, end);
-		if (separation != null) return separation;
-		
-		// Check if there is a one degree separation between start and end.
-		// If so, return it! If not, at least we get the list of all of the
-		// links to which the starting article links to.
-		HashSet<String> links = new HashSet<String>();
-		separation = Separation.getSeparation1(start, end, links);
-		if (separation != null) return separation;
-		
-		// No path possible because the start contains no links!
-		if (links.isEmpty()) return null;
-		
-		// Check if there is a two degree separation between start and end.
-		// If so, return it! If not, we will get the list of all of the 
-		// backlinks.
-		HashSet<String> backlinks = new HashSet<String>();
-		separation = Separation.getSeparation2(start, end, links, backlinks);
-		if (separation != null) return separation;
-		
-		// No path possible because the end contains no backlinks!
-		if (backlinks.isEmpty()) return null;
-		
-		// Last chance is checking for 3+ degrees of separation. If that
-		// returns null also then this path cannot be constructed.
-		separation = Separation.getSeparation3(start, end, links, backlinks);
-		if (separation == null) return null; 
-		
-		separation.embeddedPath = Separation.getEmbeddedPath(separation.path);
-		return separation;
-	}
-	
-	/**
-	 * Creates a new instance of the Separation class with the specified
-	 * number of degrees of separation and the specified path.
-	 * @param numD The number of degrees of separation.
-	 * @param path The path from the starting link to the ending link.
-	 */
-	private Separation(int numD, Stack<String> path) {
-		this.numDegrees = numD;
-		this.path = path;
-	}
-	
+
 	/**
 	 * Converts the specified path to an embedded path and returns it. An
 	 * embedded path will contain the names of each node in the specified
@@ -136,150 +133,109 @@ public class Separation {
 	
 	/**
 	 * Checks if the separation between the start and end articles is zero
-	 * degrees of separation. If so, an instance of the separation class is
-	 * returned. If the separation between the start and end articles is not
-	 * zero, null is returned. A zero degree separation is only possible if
-	 * the starting article's title is equal to the end article's title.
+	 * degrees of separation. Regardless, the starting article is pushed
+	 * onto the path stack.
 	 * @param start The title of the start article.
 	 * @param end The title of the end article.
-	 * @return An instance of separation containing the path between start
-	 *         and end, or null if no one degree separation exists.
+	 * @return True if the degrees of separation is zero. False otherwise.
 	 */
-	private static Separation getSeparation0(String start, String end) {
-		Stack<String> path = new Stack<String>();
-		path.push(start);
+	private boolean getSeparation0() {
+		this.path.push(this.startArticle);
 		
-		// Return 0 degrees of separation if the start article equals the
-		// end article, null otherwise.
-		return start.equals(end) ? new Separation(0, path) : null;
+		// If start == end -> 0 degrees of separation
+		return this.startArticle.equals(this.endArticle);
 	}
 	
 	/**
 	 * Checks if the separation between the start and end articles is one
-	 * degree of separation. If so, an instance of the separation class is
-	 * returned. If the separation between the start and end articles is not
-	 * one, null is returned. A one degree separation is only possible if the
-	 * links of the start article contain the end article. Regardless of 
-	 * whether the degrees of separation are one, the links hash set will be
-	 * filled with all of the links of the starting article.
-	 * @param start The title of the start article.
-	 * @param end The title of the end article.
-	 * @param links The links of the starting article. This hash set should be
-	 *              empty and will be filled using this method.
-	 * @return An instance of separation containing the path between start
-	 *         and end, or null if no one degree separation exists.
+	 * degree of separation. This method will also fetch all of the links of
+	 * the starting article. If the degrees of separation is one, the ending
+	 * article is pushed onto the path stack.
+	 * @return True if the degrees of separation is one.
 	 * @throws IOException If the links could not be properly fetched from the
 	 *                     starting article.
 	 */
-	private static Separation getSeparation1(String start, String end,
-			HashSet<String> links) throws IOException {
-		Stack<String> path = new Stack<String>();
-		path.push(start);
-		path.push(end); // Assuming we will find a one degree separation
+	private boolean getSeparation1() throws IOException {
+		++(this.numDegrees);
 		
 		// Get the links of the starting article, and short circuit halt if
 		// the end article is found.
-		links.addAll(linksFetcher.getLinks(start, end));
+		HashSet<String> newLinks = linksFetcher.getLinks(this.startArticle,
+				this.endArticle);
+		this.links.addAll(newLinks);
 		
-		// If we find a one degree separation, return the separation instance,
-		// or null otherwise.
-		return links.contains(end) ? new Separation(1, path) : null;
+		// If the links contain the end article, then we have one degree of
+		// separation.
+		if (this.links.contains(this.endArticle)) {
+			this.path.push(this.endArticle);
+			return true;
+		}
+		
+		return false;
 	}
 	
 	/**
 	 * Checks if the separation between the start and end articles is two
-	 * degrees of separation. If so, an instance of the separation class is
-	 * returned. If the separation between the start and end articles is not
-	 * two, null is returned. A two degree separation is only possible if the
-	 * links of the starting article and the backlinks of the ending article
-	 * contain some common middle article. Regardless of whether the degrees 
-	 * of separation are two, the backlinks hash set will be filled with all
-	 * of the backlinks of the ending article. 
-	 * @param start The title of the start article.
-	 * @param end The title of the end article.
-	 * @param links The links of the starting article.
-	 * @param backlinks The backlinks of the ending article. This hash set 
-	 *                  should be empty and will be filled using this method. 
-	 * @return An instance of separation containing the path between start
-	 *         and end, or null if no two degree separation exists.
+	 * degrees of separation. This method will also fetch all of the backlinks
+	 * of the ending article. If the degrees of separation is two, the path is
+	 * built by this method as well.
+	 * @return True if a two degree path was found. False otherwise.
 	 * @throws IOException If the links could not be properly fetched from the
 	 *                     starting article.
 	 */
-	private static Separation getSeparation2(String start, String end,
-			HashSet<String> links, HashSet<String> backlinks) 
-			throws IOException {
-		Stack<String> path = new Stack<String>();
-		path.push(start);
+	private boolean getSeparation2() throws IOException {
+		++(this.numDegrees);
 		
 		// Get the backlinks of the ending article (short circuit halting will
 		// never happen here since that would imply one degree of separation).
-		HashSet<String> common = backlinksFetcher.getLinks(end, start);
+		HashSet<String> common = backlinksFetcher.getLinks(this.endArticle, 
+				this.startArticle);
 		backlinks.addAll(common);
 		
 		// Find any articles that backlinks has in common with the links. This
 		// implies that there exists some middle article such that we can go
 		// from start -> middle -> end.
-		common.retainAll(links);
+		common.retainAll(this.links);
 		
-		// If no middle articles exist, return null
-		if (common.isEmpty()) return null;
+		// If no middle articles exist, return false
+		if (common.isEmpty()) return false;
 		
 		// Fetch some random article from the common set and build a path with
 		// it, returning a separation of two degrees.
 		String middle = common.iterator().next();
-		path.push(middle);
-		path.push(end);
-		return new Separation(2, path);
+		this.path.push(middle);
+		this.path.push(this.endArticle);
+		return true;
 	}
 	
 	/**
 	 * Checks if the separation between the start and end articles is three or
-	 * more degrees of separation. If so, an instance of the separation class 
-	 * is returned. If the separation between the start and end articles is 
-	 * not two, null is returned. A three or more degree separation is only 
-	 * possible if we were unable to find a zero, one, or two degree 
-	 * separation between the start and end articles.  
-	 * @param start The title of the start article.
-	 * @param end The title of the end article.
-	 * @param links The links of the starting article.
-	 * @param backlinks The backlinks of the ending article.
-	 * @return An instance of separation containing the path between start
-	 *         and end, or null if no three+ degree separation exists.
+	 * more degrees of separation. If there exists a path, the path stack is
+	 * built and true is returned.
+	 * @return True if a three or more degree path was found. False otherwise.
 	 * @throws IOException If the links could not be properly fetched from the
 	 *                     starting article.
 	 */
-	private static Separation getSeparation3(String start, String end,
-			HashSet<String> links, HashSet<String> backlinks) 
-			throws IOException {
-		// As we fetch links to find the midpoint, we are going to need to
-		// store the predecessor for each link, or successor for each 
-		// backlink.
-		HashMap<String, String> predecessors = new HashMap<String, String>();
-		HashMap<String, String> successors = new HashMap<String, String>();
+	private boolean getSeparation3() throws IOException {
+		++(this.numDegrees);
 		
 		// Set the predecessor and successor for each link and backlink.
-		for (String s : links) predecessors.put(s, start);
-		for (String s : backlinks) successors.put(s, end);
-		
-		// The degrees of separation (since this method applies to 3+ degrees
-		// of separation, we can set this to a default value of 3).
-		int degrees = 3;
+		for (String s : this.links) predecessors.put(s, this.startArticle);
+		for (String s : this.backlinks) successors.put(s, this.endArticle);
 		
 		while (true) { // Until we have found a link
 			// Build the graph from the perspective of the smaller data set.
-			if (links.size() <= backlinks.size()) {
-				links = Separation.getSeparation3GrowGraph(links,
-						backlinks, end, predecessors, linksFetcher);
+			if (this.links.size() <= this.backlinks.size()) {
+				links = this.getSeparation3GrowGraph(linksFetcher);
 			} else {
-				backlinks = Separation.getSeparation3GrowGraph(backlinks,
-						links, start, successors, backlinksFetcher);
+				backlinks = this.getSeparation3GrowGraph(backlinksFetcher);
 			}
 			
 			// Check if there is some element in common between the links and
 			// backlinks. If so, then we found a path! Otherwise, we must
 			// repeat the loop though the number of degrees has now increased.
-			HashSet<String> common = new HashSet<String>(links);
-			common.retainAll(backlinks);
+			HashSet<String> common = new HashSet<String>(this.links);
+			common.retainAll(this.backlinks);
 			if (!common.isEmpty()) {
 				// Get some random element from the common list and mark it
 				// as the middle node. Now we need to backtrace through the
@@ -292,37 +248,37 @@ public class Separation {
 				String currentPredecessor = middle;
 				String currentSuccessor = middle;
 				
-				// Create a path stack for storing the path and a queue for
-				// backtracing through all of the predecessors.
-				Stack<String> path = new Stack<String>();
+				// Create a stack for backtracing the path
 				Stack<String> backtrace = new Stack<String>();
 				
 				// Until we back trace all the way back to starting title
-				while (!currentPredecessor.equals(start)) {
+				while (!currentPredecessor.equals(this.startArticle)) {
 					// Get the predecessor of the current predecessor and add
 					// it to the backtrace queue.
 					currentPredecessor = predecessors.get(currentPredecessor);
 					backtrace.push(currentPredecessor);
 				}
 				
-				// Pop all of the titles from the queue and onto the path
+				// Pop all of the titles from the queue and onto the path with
+				// the exception of the starting article since that is already
+				// in the path.
+				backtrace.pop();
 				while (!backtrace.isEmpty()) {
-					path.push(backtrace.pop());
+					this.path.push(backtrace.pop());
 				}
 				
 				// For the successors, we can just add all of the the
 				// successors to the path stack, including the middle node and
 				// the end article.
-				while (!currentSuccessor.equals(end)) {
-					path.push(currentSuccessor);
+				while (!currentSuccessor.equals(this.endArticle)) {
+					this.path.push(currentSuccessor);
 					currentSuccessor = successors.get(currentSuccessor);
 				}
-				path.push(end);
+				this.path.push(this.endArticle);
 				
-				// Return the full path with the number of degrees.
-				return new Separation(degrees, path);
+				return true;
 			} else {
-				++degrees;
+				++(this.numDegrees);
 			}
 		}
 	}
@@ -330,28 +286,28 @@ public class Separation {
 	/**
 	 * Grows the graph from one side in the separation three+ degrees 
 	 * algorithm.
-	 * @param links The links for which we are to grow the graph. For each
-	 *              link in the set, this will fetch the (back)links of the
-	 *              link and add them to a set which will be returned at the
-	 *              end of the method.
-	 * @param otherLinks The hash set of the other side of the graph (i.e. if
-	 *                   the links set is backlinks, this is the links). 
-	 * @param target The target link. If this is found when fetching new links
-	 *               the method will halt early.
-	 * @param map The predecessor map (for links) or the successor map (for
-	 *            backlinks).
 	 * @param fetcher The fetcher to be used when getting the links or 
-	 *                backlinks.
-	 * @return The set of (back)links.
+	 *                backlinks. If this is a LinksFetcher, the graph will be
+	 *                grown from the starting node side. Otherwise, the graph
+	 *                will be grown from the ending node side.
+	 * @return The new set of (back)links.
 	 * @throws IOException If the links could not be properly fetched.
 	 */
-	private static HashSet<String> getSeparation3GrowGraph(
-			HashSet<String> links, HashSet<String> otherLinks, String target,
-			HashMap<String, String> map, AbstractLinkFetcher fetcher) 
-			throws IOException {
+	private HashSet<String> getSeparation3GrowGraph(
+			AbstractLinkFetcher fetcher) throws IOException {
 		HashSet<String> newLinks = new HashSet<String>(); // New links set
 		
-		for (String link : links) { // Go through links
+		// If the parameter was a links fetcher then we need to build the
+		// graph from the starting node. Otherwise, set up the parameters to
+		// build the graph from the ending node.
+		boolean isStartSide = fetcher == Separation.linksFetcher;	
+		String target = isStartSide ? this.endArticle : this.startArticle;
+		HashSet<String> thisSide = isStartSide ? this.links : this.backlinks;
+		HashSet<String> otherSide = isStartSide ? this.backlinks : this.links;
+		HashMap<String, String> map = isStartSide ? 
+				this.predecessors : this.successors;
+
+		for (String link : thisSide) { // Go through links
 			// Get all of the (back)links of this link
 			HashSet<String> linksOf = fetcher.getLinks(link, target);
 			newLinks.addAll(linksOf);
@@ -367,7 +323,7 @@ public class Separation {
 			// backlinks. If so, then this link leads to a backlink
 			// and so it is a middle link and we have found a path!
 			HashSet<String> common = new HashSet<String>(linksOf);
-			common.retainAll(otherLinks);
+			common.retainAll(otherSide);
 			if (!common.isEmpty()) return newLinks;
 		}
 		

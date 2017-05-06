@@ -40,7 +40,7 @@ public class SeparationTest {
 		Separation separation = null;
 		double start = System.currentTimeMillis();
 		try {
-			 separation = Separation.getSeparation(article1, article2);
+			 separation = new Separation(article1, article2);
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail("Separation Threw Exception!");
