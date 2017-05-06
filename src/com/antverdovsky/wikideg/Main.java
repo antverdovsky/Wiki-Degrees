@@ -5,6 +5,9 @@ import java.io.IOException;
 public class Main {
 	public static void main(String[] args) {
 		try {
+			String jsonRandom = WikiFetch.getData(WikiFetch.getRandomURL());
+			System.out.println(WikiParse.parseRandomArticle(jsonRandom));
+			
 			Separation s6 = Separation.getSeparation("Banana", "Musa velutina");
 			System.out.println(s6.getNumDegrees());
 			System.out.println(s6.getPath());

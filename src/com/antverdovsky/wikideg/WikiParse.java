@@ -11,6 +11,26 @@ import com.google.gson.JsonParser;
 
 public class WikiParse {
 	/**
+	 * Finds the random article in the specified JSON data.
+	 * @return The title of a random Wikipedia article.
+	 */
+	public static String parseRandomArticle(String json) {
+		// Create a JSON Parser using GSON and parse the root of the JSON data
+		JsonParser jParser = new JsonParser();
+		JsonElement root = jParser.parse(json);
+		
+		// Navigate Root -> Query -> Random
+		JsonElement jQuery = root.getAsJsonObject().get("query");
+		JsonElement jRandom = jQuery.getAsJsonObject().get("random");
+		
+		// Fetch the random array in the JSON data and just get the first 
+		// element.	
+		JsonArray randomArray = jRandom.getAsJsonArray();
+		JsonObject first = randomArray.get(0).getAsJsonObject();
+		return first.get("title").getAsString();
+	}
+	
+	/**
 	 * Finds the embedded article name of the target article in the specified
 	 * export data.
 	 * @param data The export data.

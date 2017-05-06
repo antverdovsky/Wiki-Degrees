@@ -131,6 +131,15 @@ public class WikiFetch {
 	}
 	
 	/**
+	 * Gets the URL containing the JSON data for a random Wikipedia article.
+	 * @return The URL link.
+	 */
+	public static String getRandomURL() {
+		return "https://en.wikipedia.org/w/api.php?action=query&list=random" + 
+				"&rnlimit=1&rnnamespace=0&format=json";
+	}
+	
+	/**
 	 * Appends the name string onto a copy of the pre title string and returns
 	 * the result.
 	 * @param preTitle The pre title URL string.
