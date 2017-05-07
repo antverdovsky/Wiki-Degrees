@@ -3,10 +3,51 @@ package com.antverdovsky.wikideg;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
+
+class ThreadedGraphGrower implements Runnable {
+	static volatile boolean isDone = false;
+	
+	private List<String> writeTo;
+	private List<String> task;
+	private List<String> targets;
+	private ConcurrentHashMap<String, String> map;
+	private AbstractLinkFetcher linkFetcher;
+	
+	public ThreadedGraphGrower(List<String> writeTo, List<String> task, 
+			AbstractLinkFetcher linkFetcher, List<String> targets,
+			ConcurrentHashMap<String, String> map) {
+		this.writeTo = writeTo;
+		this.task = task;
+		this.linkFetcher = linkFetcher;
+		this.targets = targets;
+		this.map = map;
+	}
+	
+	public void run() {
+		int index = 0;
+		
+		while (!ThreadedGraphGrower.isDone && index < this.task.size()) {
+			String link = this.task.get(index);
+			
+			ArrayList<String> linksOf = new ArrayList<String>();
+			try { linksOf = linkFetcher.getLinks(link, ""); } 
+			catch (IOException e) { e.printStackTrace(); }
+
+			for (String linkOf : linksOf) {
+				this.map.putIfAbsent(linkOf, link);
+				this.writeTo.add(linkOf);
+			}
+
+			linksOf.retainAll(this.targets);
+			if (!linksOf.isEmpty()) ThreadedGraphGrower.isDone = true;
+			
+			++index;
+		}
+	}
+}
 
 public class Separation {
 	// Fetchers for Links and Backlinks.
@@ -99,6 +140,14 @@ public class Separation {
 	 */
 	public Stack<String> getPath() {
 		return this.path;
+	}
+	
+	/**
+	 * Returns whether or not a path was found.
+	 * @return True if a path was found. False otherwise.
+	 */
+	public boolean getPathExists() {
+		return this.pathExists;
 	}
 
 	/**
@@ -232,8 +281,12 @@ public class Separation {
 			// Build the graph from the perspective of the smaller data set.
 			if (this.links.size() <= this.backlinks.size()) {
 				links = this.getSeparation3GrowGraph(linksFetcher);
+				
+				if (links.isEmpty()) return false;
 			} else {
 				backlinks = this.getSeparation3GrowGraph(backlinksFetcher);
+				
+				if (backlinks.isEmpty()) return false;
 			}
 			
 			// Check if there is some element in common between the links and
@@ -300,40 +353,47 @@ public class Separation {
 	 */
 	private ArrayList<String> getSeparation3GrowGraph(
 			AbstractLinkFetcher fetcher) throws IOException {
-		ArrayList<String> newLinks = new ArrayList<String>(); // New links set
+		List<String> newLinks = Collections.synchronizedList(
+				new ArrayList<String>());
 		
 		// If the parameter was a links fetcher then we need to build the
 		// graph from the starting node. Otherwise, set up the parameters to
 		// build the graph from the ending node.
-		boolean isStartSide = fetcher == Separation.linksFetcher;	
-		String target = isStartSide ? this.endArticle : this.startArticle;
+		boolean isStartSide = fetcher == Separation.linksFetcher;
 		List<String> thisSide = isStartSide ? this.links : this.backlinks;
 		List<String> otherSide = isStartSide ? this.backlinks : this.links;
 		ConcurrentHashMap<String, String> map = isStartSide ? 
 				this.predecessors : this.successors;
 
-		for (String link : thisSide) { // Go through links
-			System.out.println(link);
+		final int NUM_PER_THREAD = 50;
+		int numThreads = 1 + (thisSide.size() / NUM_PER_THREAD);
+		
+		ArrayList<Thread> threads = new ArrayList<Thread>();
+		ThreadedGraphGrower.isDone = false;
+		
+		for (int i = 1; i <= numThreads; ++i) {
+			int fromIndex = (i - 1) * NUM_PER_THREAD;
+			int toIndex = fromIndex + NUM_PER_THREAD;
 			
-			// Get all of the (back)links of this link
-			ArrayList<String> linksOf = fetcher.getLinks(link, target);
-			newLinks.addAll(linksOf);
+			if (i == numThreads) toIndex = thisSide.size();
+			if (toIndex >= thisSide.size()) toIndex = thisSide.size();
 			
-			// Set this link as the predecessor or successor of all of the 
-			// (back)links of this link and add the link to the newLinks list,
-			// only if we have not yet seen this link!
-			for (String linkOf : linksOf)
-				if (!map.containsKey(linkOf)) 
-					map.put(linkOf, link);
-				
-			// Check if any links of this link are contained in the
-			// backlinks. If so, then this link leads to a backlink
-			// and so it is a middle link and we have found a path!
-			ArrayList<String> common = new ArrayList<String>(linksOf);
-			common.retainAll(otherSide);
-			if (!common.isEmpty()) return newLinks;
+			List<String> task = thisSide.subList(fromIndex, toIndex);
+			
+			Thread tgg = new Thread(new ThreadedGraphGrower(
+					newLinks, task, fetcher, otherSide, map));
+			threads.add(tgg);
+			tgg.start();
 		}
 		
-		return newLinks;
+		for (Thread t : threads) {
+			try {
+				t.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} 
+		}
+		
+		return new ArrayList<String>(newLinks);
 	}
 }
