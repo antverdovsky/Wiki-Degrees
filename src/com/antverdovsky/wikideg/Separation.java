@@ -3,19 +3,37 @@ package com.antverdovsky.wikideg;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 
 class ThreadedGraphGrower implements Runnable {
+	// Flag indicating whether all instances should perform their task. This
+	// will be set to true by any instance of this class once that instance
+	// fetches a target link.
 	static volatile boolean isDone = false;
 	
-	private List<String> writeTo;
-	private List<String> task;
-	private List<String> targets;
-	private ConcurrentHashMap<String, String> map;
-	private AbstractLinkFetcher linkFetcher;
+	private List<String> writeTo;   // Where to add fetched links (concurrent)
+	private List<String> task;      // List for which links are to be fetched
+	private List<String> targets;   // The graph's other side nodes
 	
+	private ConcurrentHashMap<String, String> map; // Predecessor/Successor 
+	private AbstractLinkFetcher linkFetcher;       // Fetcher to be used
+	
+	/**
+	 * Creates a new thread graph grower instance.
+	 * @param writeTo The concurrent list into which the graph grower is to
+	 *                write all of the links it fetches.
+	 * @param task The list of links for which we are going to fetch their
+	 *             links.
+	 * @param linkFetcher The Link Fetcher to be used when fetching all of the
+	 *                    links.
+	 * @param targets The other links list. If any fetched link is contained
+	 *                in this list as well, the isDone flag will be set to
+	 *                true since a common node has been found.
+	 * @param map The predecessor or successor hash map.
+	 */
 	public ThreadedGraphGrower(List<String> writeTo, List<String> task, 
 			AbstractLinkFetcher linkFetcher, List<String> targets,
 			ConcurrentHashMap<String, String> map) {
@@ -26,25 +44,37 @@ class ThreadedGraphGrower implements Runnable {
 		this.map = map;
 	}
 	
+	/**
+	 * Continually fetches the links of each link in the task list. As each
+	 * new link is fetched, its predecessor or successor is added to the
+	 * predecessor or successor hash map and the link is added to the
+	 * concurrent write to list. If any of the links fetched are contained in
+	 * the targets list, this method is halted for all instances of this.
+	 */
 	public void run() {
-		int index = 0;
+		Iterator<String> it = this.task.iterator();
 		
-		while (!ThreadedGraphGrower.isDone && index < this.task.size()) {
-			String link = this.task.get(index);
+		// While the isDone flag is not set to true and we have more elements
+		// in the task list that need processing.
+		while (!ThreadedGraphGrower.isDone && it.hasNext()) {
+			String link = it.next(); // Fetch the next link from the task list
 			
+			// Get the (back)links of the link fetched 
 			ArrayList<String> linksOf = new ArrayList<String>();
 			try { linksOf = linkFetcher.getLinks(link, ""); } 
 			catch (IOException e) { e.printStackTrace(); }
 
+			// For each link fetched, add it to the predecessor/successor map
+			// and write it to the write to list.
 			for (String linkOf : linksOf) {
 				this.map.putIfAbsent(linkOf, link);
 				this.writeTo.add(linkOf);
 			}
 
+			// Check if any elements of targets were found. If so, halt 
+			// execution for every instance of this class.
 			linksOf.retainAll(this.targets);
 			if (!linksOf.isEmpty()) ThreadedGraphGrower.isDone = true;
-			
-			++index;
 		}
 	}
 }
@@ -151,21 +181,15 @@ public class Separation {
 	}
 
 	/**
-	 * Converts the specified path to an embedded path and returns it. An
-	 * embedded path will contain the names of each node in the specified
-	 * path as it is present in the predecessor node, since Wikipedia
-	 * sometimes uses a different article name when it is embedded in an
-	 * article.
-	 * @param path The standard path.
-	 * @return The embedded path.
+	 * Computes the embedded path for this Separation instance. This should
+	 * only be called once the standard path has been computed. An embedded
+	 * path will contain the names of each node in the specified path as it is
+	 * present in the predecessor node, since Wikipedia sometimes uses a 
+	 * different article name when it is embedded in an article.
 	 * @throws IOException If there is an error fetching the export for any
 	 *                     of the articles in the path.
 	 */
-	public static Stack<String> getEmbeddedPath(Stack<String> path) 
-			throws IOException {
-		// Create a stack to store the embedded path.
-		Stack<String> embeddedPath = new Stack<String>();
-		
+	public void computeEmbeddedPath() throws IOException {
 		// Foreach article in the standard path
 		for (int i = 0; i < path.size() - 1; ++i) {
 			// Get the current article title and the next article title
@@ -178,11 +202,8 @@ public class Separation {
 			
 			// Get the name of the next article as it appears in the current
 			// article and push it onto the stack.
-			embeddedPath.push(WikiParse.parseEmbeddedArticle(data, next));
+			this.embeddedPath.push(WikiParse.parseEmbeddedArticle(data, next));
 		}
-		
-		// Return the embedded path
-		return embeddedPath;
 	}
 	
 	/**
@@ -222,6 +243,8 @@ public class Separation {
 		// separation.
 		if (this.links.contains(this.endArticle)) {
 			this.path.push(this.endArticle);
+			
+			this.computeEmbeddedPath();
 			return true;
 		}
 		
@@ -259,6 +282,8 @@ public class Separation {
 		String middle = common.iterator().next();
 		this.path.push(middle);
 		this.path.push(this.endArticle);
+		
+		this.computeEmbeddedPath();
 		return true;
 	}
 	
@@ -334,6 +359,7 @@ public class Separation {
 				}
 				this.path.push(this.endArticle);
 				
+				this.computeEmbeddedPath();
 				return true;
 			} else {
 				++(this.numDegrees);
@@ -353,6 +379,8 @@ public class Separation {
 	 */
 	private ArrayList<String> getSeparation3GrowGraph(
 			AbstractLinkFetcher fetcher) throws IOException {
+		// Create a new thread safe list into which each thread will write its
+		// fetched links.
 		List<String> newLinks = Collections.synchronizedList(
 				new ArrayList<String>());
 		
@@ -368,32 +396,40 @@ public class Separation {
 		final int NUM_PER_THREAD = 50;
 		int numThreads = 1 + (thisSide.size() / NUM_PER_THREAD);
 		
+		// Create a list of threads which will be used. Be sure to reset the
+		// isDone flag every time we want to reuse the threads!
 		ArrayList<Thread> threads = new ArrayList<Thread>();
 		ThreadedGraphGrower.isDone = false;
 		
 		for (int i = 1; i <= numThreads; ++i) {
+			// Get the indices of elements in the links list so that we may
+			// evenly partition the links elements amongst all the threads.
 			int fromIndex = (i - 1) * NUM_PER_THREAD;
 			int toIndex = fromIndex + NUM_PER_THREAD;
 			
+			// Just In Case, limit the toIndex to the side of the links list.
+			// Also, if this is the last thread, make sure it encapsulates the
+			// entire remaining partition of the list.
 			if (i == numThreads) toIndex = thisSide.size();
 			if (toIndex >= thisSide.size()) toIndex = thisSide.size();
 			
+			// Create the partition of the list
 			List<String> task = thisSide.subList(fromIndex, toIndex);
 			
+			// Create a new Thread with the partition as its assignment, add
+			// it to the list and start its execution.
 			Thread tgg = new Thread(new ThreadedGraphGrower(
 					newLinks, task, fetcher, otherSide, map));
 			threads.add(tgg);
 			tgg.start();
 		}
 		
+		// Wait for every single thread to fetch its data...
 		for (Thread t : threads) {
-			try {
-				t.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} 
+			try { t.join(); } 
+			catch (InterruptedException e) { e.printStackTrace(); } 
 		}
 		
-		return new ArrayList<String>(newLinks);
+		return new ArrayList<String>(newLinks); // Finished
 	}
 }

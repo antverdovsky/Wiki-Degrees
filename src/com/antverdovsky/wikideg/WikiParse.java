@@ -136,6 +136,13 @@ public class WikiParse {
 	 */
 	public static void parseLinksExport(
 			String export, ArrayList<String> links, String target) {
+		// Trim the export text so that we only have the article itself
+		int start = export.indexOf("<text xml:space=\"preserve\"");
+		int end = export.lastIndexOf("</text>");
+		if (start > 0 && end > 0 && // JIC 
+				start < export.length() && end < export.length())
+			export = export.substring(start, end);
+		
 		String pattern = "\\[\\[(.*?)\\]\\]";
 		Pattern regex = Pattern.compile(pattern);
 		Matcher matcher = regex.matcher(export);

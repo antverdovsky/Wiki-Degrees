@@ -11,8 +11,7 @@ public class Main {
 		double a = System.nanoTime();
 		Separation s100 =  new Separation("Buzz! Junior: Monster Rumble", "Kayode McKinnon");
 		System.out.println(s100.getNumDegrees());
-		System.out.println(s100.getPath());
-		System.out.println(Separation.getEmbeddedPath(s100.getPath()));	
+		System.out.println(s100.getPath());	
 		
 		
 		System.out.println(System.nanoTime() - a);	
@@ -20,8 +19,13 @@ public class Main {
 		Separation s101 =  new Separation("Barnet London Borough Council election, 1964", "USS Enterprise (NCC-1701-D)");
 		System.out.println(s101.getNumDegrees());
 		System.out.println(s101.getPath());
-		System.out.println(Separation.getEmbeddedPath(s101.getPath()));
 		
+		/*
+		 * 7 DEGREES!!! ~100s
+		Separation s101 =  new Separation("Washington W. Boynton", "Agonopterix metamelopa");
+		System.out.println(s101.getNumDegrees());
+		System.out.println(s101.getPath());
+		*/
 			/*
 			Separation s3 =  new Separation("Lingua Franca Nova", "United Airlines");
 			System.out.println(s3.getNumDegrees());

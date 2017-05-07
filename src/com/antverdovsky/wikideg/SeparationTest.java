@@ -1,7 +1,6 @@
 package com.antverdovsky.wikideg;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +40,7 @@ public class SeparationTest {
 		double start = System.currentTimeMillis();
 		try {
 			 separation = new Separation(article1, article2);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Separation Threw Exception!");
 		}
@@ -51,24 +50,32 @@ public class SeparationTest {
 		if (separation == null) System.exit(0);
 		
 		//
-		// Now let's check that we can build the path ourselves.
+		// Now let's check that we can trace the path ourselves.
 		//
 		
 		// Get the values of path and number of degrees from separation return
 		Stack<String> sepPath = separation.getPath();
 		Stack<String> sepEmbPath = separation.getEmbeddedPath();
 		int sepNumDegrees = separation.getNumDegrees();
+		boolean sepValid = separation.getPathExists();
 		
+		System.out.println("Separation Valid? " + sepValid);
 		System.out.println("Separation Path: " + sepPath);
 		System.out.println("Separation Embedded Path: " + sepEmbPath);
 		System.out.println("Separation Number of Degrees: " + sepNumDegrees);
 		System.out.println("Time to Compute (ms): " + (stop - start));
 		
+		if (!sepValid) {
+			System.out.println("Path was not found! Aborted Test.");
+			return;
+		}
+		
 		// The current and next article names 
 		String current = "";
 		String next = "";
 		
-		for (int i = 0; i < sepPath.size() - 1; ++i) {
+		int i = 0;
+		for (; i < sepPath.size() - 1; ++i) {
 			// Get the current and next article.
 			current = sepPath.get(i);
 			next = sepPath.get(i + 1);
@@ -88,5 +95,10 @@ public class SeparationTest {
 			System.out.println(canHop ? "YES" : "NO");
 			assertTrue(canHop);
 		}
+		
+		System.out.println("Traced Path with " + i + " degrees.");
+		assertEquals(i, sepNumDegrees);
+		
+		System.out.println("Finished Test.");
 	}
 }
