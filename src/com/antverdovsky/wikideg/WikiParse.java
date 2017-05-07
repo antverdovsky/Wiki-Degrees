@@ -3,6 +3,8 @@ package com.antverdovsky.wikideg;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -81,7 +83,7 @@ public class WikiParse {
 	 *         JSON data contains no continue token, or if the target has been
 	 *         found.
 	 */
-	public static String parseBacklinks(
+	public static String parseBacklinksJSON(
 			String json, ArrayList<String> backlinks, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
@@ -120,6 +122,46 @@ public class WikiParse {
 
 		return blCont;
 	}
+	
+	/**
+	 * Parses the specified export data, searching for links. All of the
+	 * links fetched from the export data are then added to the links
+	 * reference parameter. If the target string is not empty, for each 
+	 * link fetched from the JSON data, if the target equals the link, the
+	 * method will append the target to the links and halt its execution.
+	 * @param export The export data String.
+	 * @param links The links set into which the parsed links are to be 
+	 *              appended.
+	 * @param target The target String which is to be found in the JSON data.
+	 */
+	public static void parseLinksExport(
+			String export, ArrayList<String> links, String target) {
+		String pattern = "\\[\\[(.*?)\\]\\]";
+		Pattern regex = Pattern.compile(pattern);
+		Matcher matcher = regex.matcher(export);
+		
+		while (matcher.find()) {
+			String match = matcher.group(0);
+			
+			int startIndex = 2; // For stripping off the "[["
+			int endIndex = match.length() - 2; // For stripping off the "]]"
+			
+			// If the string contains a "|" then the article has a link but it
+			// is referenced under a different name in this page. Either way,
+			// we don't want the name of how it is referenced, so we will cut
+			// off the string before the reference name.
+			int split = match.indexOf('|');
+			if (split >= 0) endIndex = split;
+			
+			// Get the article name and add it to the links list.
+			// TODO: Need to not add non namespace zero links...
+			match = match.substring(startIndex, endIndex);
+			links.add(match);
+			
+			// If we found the target then return
+			if (match.equals(target)) return;
+		}
+	}
 
 	/**
 	 * Parses the specified links JSON data. All of the links fetched from
@@ -137,7 +179,7 @@ public class WikiParse {
 	 *         JSON data contains no continue token, or if the target has been
 	 *         found.
 	 */
-	public static String parseLinks(
+	public static String parseLinksJSON(
 			String json, ArrayList<String> links, String target) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();

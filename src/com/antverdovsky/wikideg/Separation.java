@@ -51,7 +51,7 @@ class ThreadedGraphGrower implements Runnable {
 
 public class Separation {
 	// Fetchers for Links and Backlinks.
-	private static LinksFetcher linksFetcher = new LinksFetcher();
+	private static ExportLinksFetcher linksFetcher = new ExportLinksFetcher();
 	private static BacklinksFetcher backlinksFetcher = new BacklinksFetcher();
 	
 	private int numDegrees;               // Degrees of Separation

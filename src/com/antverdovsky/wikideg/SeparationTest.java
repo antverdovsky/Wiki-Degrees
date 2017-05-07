@@ -74,7 +74,7 @@ public class SeparationTest {
 			next = sepPath.get(i + 1);
 			
 			ArrayList<String> links = new ArrayList<String>();
-			try { links = new LinksFetcher().getLinks(current, next); }
+			try { links = new JSONLinksFetcher().getLinks(current, next); }
 			catch (IOException e) {
 				e.printStackTrace();
 				fail("Failed to fetch articles!");
