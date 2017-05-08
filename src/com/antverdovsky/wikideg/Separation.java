@@ -73,8 +73,9 @@ class ThreadedGraphGrower implements Runnable {
 
 			// Check if any elements of targets were found. If so, halt 
 			// execution for every instance of this class.
-			linksOf.retainAll(this.targets);
-			if (!linksOf.isEmpty()) ThreadedGraphGrower.isDone = true;
+			List<String> common = Utilities.retainAllIgnoreCase(
+					linksOf, this.targets);
+			if (!common.isEmpty()) ThreadedGraphGrower.isDone = true;
 		}
 	}
 }
@@ -218,7 +219,7 @@ public class Separation {
 		this.path.push(this.startArticle);
 		
 		// If start == end -> 0 degrees of separation
-		return this.startArticle.equals(this.endArticle);
+		return this.startArticle.equalsIgnoreCase(this.endArticle);
 	}
 	
 	/**
@@ -241,7 +242,7 @@ public class Separation {
 		
 		// If the links contain the end article, then we have one degree of
 		// separation.
-		if (this.links.contains(this.endArticle)) {
+		if (Utilities.containsIgnoreCase(this.links, this.endArticle)) {
 			this.path.push(this.endArticle);
 			
 			this.computeEmbeddedPath();
@@ -265,14 +266,14 @@ public class Separation {
 		
 		// Get the backlinks of the ending article (short circuit halting will
 		// never happen here since that would imply one degree of separation).
-		ArrayList<String> common = backlinksFetcher.getLinks(this.endArticle, 
+		this.backlinks =  backlinksFetcher.getLinks(this.endArticle, 
 				this.startArticle);
-		backlinks.addAll(common);
 		
 		// Find any articles that backlinks has in common with the links. This
 		// implies that there exists some middle article such that we can go
 		// from start -> middle -> end.
-		common.retainAll(this.links);
+		List<String> common = Utilities.retainAllIgnoreCase(this.backlinks,
+				this.links);
 		
 		// If no middle articles exist, return false
 		if (common.isEmpty()) return false;
@@ -317,8 +318,8 @@ public class Separation {
 			// Check if there is some element in common between the links and
 			// backlinks. If so, then we found a path! Otherwise, we must
 			// repeat the loop though the number of degrees has now increased.
-			ArrayList<String> common = new ArrayList<String>(this.links);
-			common.retainAll(this.backlinks);
+			List<String> common = Utilities.retainAllIgnoreCase(
+					this.links, this.backlinks);
 			if (!common.isEmpty()) {
 				// Get some random element from the common list and mark it
 				// as the middle node. Now we need to backtrace through the
@@ -335,7 +336,8 @@ public class Separation {
 				Stack<String> backtrace = new Stack<String>();
 				
 				// Until we back trace all the way back to starting title
-				while (!currentPredecessor.equals(this.startArticle)) {
+				while (!currentPredecessor.equalsIgnoreCase(
+						this.startArticle)) {
 					// Get the predecessor of the current predecessor and add
 					// it to the backtrace queue.
 					currentPredecessor = predecessors.get(currentPredecessor);
@@ -353,7 +355,7 @@ public class Separation {
 				// For the successors, we can just add all of the the
 				// successors to the path stack, including the middle node and
 				// the end article.
-				while (!currentSuccessor.equals(this.endArticle)) {
+				while (!currentSuccessor.equalsIgnoreCase(this.endArticle)) {
 					this.path.push(currentSuccessor);
 					currentSuccessor = successors.get(currentSuccessor);
 				}

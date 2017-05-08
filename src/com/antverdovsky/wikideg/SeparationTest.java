@@ -1,6 +1,8 @@
 package com.antverdovsky.wikideg;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ public class SeparationTest {
 			e1.printStackTrace();
 			fail("Unable to get random articles!");
 		}
-		
+
 		System.out.println("Article A: " + article1);
 		System.out.println("Article B: " + article2);
 		
@@ -80,6 +82,8 @@ public class SeparationTest {
 			current = sepPath.get(i);
 			next = sepPath.get(i + 1);
 			
+			// Fetch all of the links that we can go to from the current 
+			// article.
 			ArrayList<String> links = new ArrayList<String>();
 			try { links = new JSONLinksFetcher().getLinks(current, next); }
 			catch (IOException e) {
@@ -89,7 +93,7 @@ public class SeparationTest {
 			
 			// Assert that the export data contains the next article in
 			// the path.
-			boolean canHop = links.contains(next);
+			boolean canHop = Utilities.containsIgnoreCase(links, next);
 			System.out.print("Path exists from " + current + " to " + next +
 					"? ");
 			System.out.println(canHop ? "YES" : "NO");

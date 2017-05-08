@@ -104,7 +104,7 @@ public class WikiParse {
 			// parse any more JSON data.
 			String title = jLinkObj.get("title").getAsString();
 			backlinks.add(title);
-			if (title.equals(target)) return "";
+			if (title.equalsIgnoreCase(target)) return "";
 		}
 
 		// Navigate Root -> Continue. If unable, then there is no continue
@@ -166,7 +166,7 @@ public class WikiParse {
 			links.add(match);
 			
 			// If we found the target then return
-			if (match.equals(target)) return;
+			if (match.equalsIgnoreCase(target)) return;
 		}
 	}
 
@@ -219,7 +219,7 @@ public class WikiParse {
 			// parse any more JSON data.
 			String title = jLinkObj.get("title").getAsString();
 			links.add(title);
-			if (title.equals(target)) return "";
+			if (title.equalsIgnoreCase(target)) return "";
 		}
 
 		// Navigate Root -> Continue. If unable, then there is no continue
