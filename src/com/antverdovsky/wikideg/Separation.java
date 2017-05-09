@@ -399,8 +399,30 @@ public class Separation {
 		ConcurrentHashMap<String, String> map = isStartSide ? 
 				this.predecessors : this.successors;
 
-		final int NUM_PER_THREAD = 50;
-		int numThreads = 1 + (thisSide.size() / NUM_PER_THREAD);
+		// Since the biggest obstacle to performance for fetching links is
+		// I/O (download speed), we can have a large number of threads here.
+		final int MAX_NUM_THREADS = 128;     // Max Number of Threads at Once
+		final int MIN_TO_MULTITHREAD = 32;   // Min list size to multithread
+		final int MAX_IDEAL_PER_THREAD = 32; // Ideal task size per thread
+		
+		// By default, we use one thread with the whole list being processed
+		// by the sole thread.
+		int numThreads = 1;
+		int numPerThread = thisSide.size();
+		
+		// If the list size is big enough to use multithreading
+		if (thisSide.size() >= MIN_TO_MULTITHREAD) {
+			// Calculate the number of threads to ideally split up the task
+			numThreads = thisSide.size() / MAX_IDEAL_PER_THREAD + 1;
+			
+			// If the ideal will result in too many threads, limit the number
+			// of threads to the maximum constant.
+			if (numThreads > MAX_NUM_THREADS) 
+				numThreads = MAX_NUM_THREADS;
+			
+			// Calculate the number of elements in the task per thread
+			numPerThread = thisSide.size() / MAX_NUM_THREADS;
+		}
 		
 		// Create a list of threads which will be used. Be sure to reset the
 		// isDone flag every time we want to reuse the threads!
@@ -410,8 +432,8 @@ public class Separation {
 		for (int i = 1; i <= numThreads; ++i) {
 			// Get the indices of elements in the links list so that we may
 			// evenly partition the links elements amongst all the threads.
-			int fromIndex = (i - 1) * NUM_PER_THREAD;
-			int toIndex = fromIndex + NUM_PER_THREAD;
+			int fromIndex = (i - 1) * numPerThread;
+			int toIndex = fromIndex + numPerThread;
 			
 			// Just In Case, limit the toIndex to the side of the links list.
 			// Also, if this is the last thread, make sure it encapsulates the
