@@ -67,7 +67,7 @@ class ThreadedGraphGrower implements Runnable {
 			// For each link fetched, add it to the predecessor/successor map
 			// and write it to the write to list.
 			for (String linkOf : linksOf) {
-				this.map.putIfAbsent(linkOf, link);
+				this.map.putIfAbsent(linkOf.toLowerCase(), link);
 				this.writeTo.add(linkOf);
 			}
 
@@ -300,8 +300,10 @@ public class Separation {
 		++(this.numDegrees);
 		
 		// Set the predecessor and successor for each link and backlink.
-		for (String s : this.links) predecessors.put(s, this.startArticle);
-		for (String s : this.backlinks) successors.put(s, this.endArticle);
+		for (String s : this.links) predecessors.put(s.toLowerCase(),
+				this.startArticle);
+		for (String s : this.backlinks) successors.put(s.toLowerCase(),
+				this.endArticle);
 		
 		while (true) { // Until we have found a link
 			// Build the graph from the perspective of the smaller data set.
@@ -340,7 +342,8 @@ public class Separation {
 						this.startArticle)) {
 					// Get the predecessor of the current predecessor and add
 					// it to the backtrace queue.
-					currentPredecessor = predecessors.get(currentPredecessor);
+					currentPredecessor = predecessors.get(
+							currentPredecessor.toLowerCase());
 					backtrace.push(currentPredecessor);
 				}
 				
@@ -357,7 +360,8 @@ public class Separation {
 				// the end article.
 				while (!currentSuccessor.equalsIgnoreCase(this.endArticle)) {
 					this.path.push(currentSuccessor);
-					currentSuccessor = successors.get(currentSuccessor);
+					currentSuccessor = successors.get(
+							currentSuccessor.toLowerCase());
 				}
 				this.path.push(this.endArticle);
 				
