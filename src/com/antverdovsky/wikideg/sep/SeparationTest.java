@@ -1,4 +1,4 @@
-package com.antverdovsky.wikideg;
+package com.antverdovsky.wikideg.sep;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -10,6 +10,14 @@ import java.util.Stack;
 
 import org.junit.Test;
 
+import com.antverdovsky.wikideg.linkfetch.JSONLinksFetcher;
+import com.antverdovsky.wikideg.util.DataParse;
+import com.antverdovsky.wikideg.util.URLFetch;
+import com.antverdovsky.wikideg.util.Utilities;
+
+/**
+ * Basic Testing of the Separation class.
+ */
 public class SeparationTest {
 	@Test
 	/**
@@ -25,10 +33,10 @@ public class SeparationTest {
 		String article1 = "";
 		String article2 = "";
 		try {
-			article1 = WikiParse.parseRandomArticle(
-					WikiFetch.getData(WikiFetch.getRandomURL()));
-			article2 = WikiParse.parseRandomArticle(
-					WikiFetch.getData(WikiFetch.getRandomURL()));
+			article1 = DataParse.parseRandomArticle(
+					URLFetch.getData(URLFetch.getRandomURL()));
+			article2 = DataParse.parseRandomArticle(
+					URLFetch.getData(URLFetch.getRandomURL()));
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			fail("Unable to get random articles!");

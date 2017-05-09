@@ -1,4 +1,4 @@
-package com.antverdovsky.wikideg;
+package com.antverdovsky.wikideg.sep;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,7 +8,19 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 
-class ThreadedGraphGrower implements Runnable {
+import com.antverdovsky.wikideg.linkfetch.AbstractLinkFetcher;
+import com.antverdovsky.wikideg.linkfetch.BacklinksFetcher;
+import com.antverdovsky.wikideg.linkfetch.ExportLinksFetcher;
+import com.antverdovsky.wikideg.util.DataParse;
+import com.antverdovsky.wikideg.util.URLFetch;
+import com.antverdovsky.wikideg.util.Utilities;
+
+/**
+ * Class which fetches all of the links or backlinks of a particular set of
+ * articles. It can be instantiated using threads to allow multiple threads
+ * to fetch different links at the same time. 
+ */
+class ThreadedLinkFetcher implements Runnable {
 	// Flag indicating whether all instances should perform their task. This
 	// will be set to true by any instance of this class once that instance
 	// fetches a target link.
@@ -34,7 +46,7 @@ class ThreadedGraphGrower implements Runnable {
 	 *                true since a common node has been found.
 	 * @param map The predecessor or successor hash map.
 	 */
-	public ThreadedGraphGrower(List<String> writeTo, List<String> task, 
+	public ThreadedLinkFetcher(List<String> writeTo, List<String> task, 
 			AbstractLinkFetcher linkFetcher, List<String> targets,
 			ConcurrentHashMap<String, String> map) {
 		this.writeTo = writeTo;
@@ -56,7 +68,7 @@ class ThreadedGraphGrower implements Runnable {
 		
 		// While the isDone flag is not set to true and we have more elements
 		// in the task list that need processing.
-		while (!ThreadedGraphGrower.isDone && it.hasNext()) {
+		while (!ThreadedLinkFetcher.isDone && it.hasNext()) {
 			String link = it.next(); // Fetch the next link from the task list
 			
 			// Get the (back)links of the link fetched 
@@ -75,11 +87,14 @@ class ThreadedGraphGrower implements Runnable {
 			// execution for every instance of this class.
 			List<String> common = Utilities.retainAllIgnoreCase(
 					linksOf, this.targets);
-			if (!common.isEmpty()) ThreadedGraphGrower.isDone = true;
+			if (!common.isEmpty()) ThreadedLinkFetcher.isDone = true;
 		}
 	}
 }
 
+/**
+ * Computes and stores the separation between two articles.
+ */
 public class Separation {
 	// Fetchers for Links and Backlinks.
 	private static ExportLinksFetcher linksFetcher = new ExportLinksFetcher();
@@ -198,12 +213,12 @@ public class Separation {
 			String next = path.get(i + 1);
 			
 			// Get the full export data of the current article
-			String url = WikiFetch.getExportURL(current);
-			String data = WikiFetch.getData(url);
+			String url = URLFetch.getExportURL(current);
+			String data = URLFetch.getData(url);
 			
 			// Get the name of the next article as it appears in the current
 			// article and push it onto the stack.
-			this.embeddedPath.push(WikiParse.parseEmbeddedArticle(data, next));
+			this.embeddedPath.push(DataParse.parseEmbeddedArticle(data, next));
 		}
 	}
 	
@@ -427,7 +442,7 @@ public class Separation {
 		// Create a list of threads which will be used. Be sure to reset the
 		// isDone flag every time we want to reuse the threads!
 		ArrayList<Thread> threads = new ArrayList<Thread>();
-		ThreadedGraphGrower.isDone = false;
+		ThreadedLinkFetcher.isDone = false;
 		
 		for (int i = 1; i <= numThreads; ++i) {
 			// Get the indices of elements in the links list so that we may
@@ -446,7 +461,7 @@ public class Separation {
 			
 			// Create a new Thread with the partition as its assignment, add
 			// it to the list and start its execution.
-			Thread tgg = new Thread(new ThreadedGraphGrower(
+			Thread tgg = new Thread(new ThreadedLinkFetcher(
 					newLinks, task, fetcher, otherSide, map));
 			threads.add(tgg);
 			tgg.start();

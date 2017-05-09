@@ -1,4 +1,4 @@
-package com.antverdovsky.wikideg;
+package com.antverdovsky.wikideg.util;
 
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -11,7 +11,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class WikiParse {
+/**
+ * Class for parsing various Wikipedia API JSON files and export data. 
+ */
+public class DataParse {
 	/**
 	 * Finds the random article in the specified JSON data.
 	 * @return The title of a random Wikipedia article.

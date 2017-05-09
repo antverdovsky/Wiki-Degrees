@@ -1,4 +1,4 @@
-package com.antverdovsky.wikideg;
+package com.antverdovsky.wikideg.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,7 +7,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.stream.Collectors;
 
-public class WikiFetch {
+/**
+ * Class for creating the URLs for JSON and Export link requests, and for
+ * downloading data from a URL.
+ */
+public class URLFetch {
 	/**
 	 * Downloads the data from the specified URL and places it into a String.
 	 * @param urlLink The URL link from which to download the data.
@@ -47,7 +51,7 @@ public class WikiFetch {
 		final String PRE_TITLE_URL = "https://en.wikipedia.org/wiki/" +
 				"Special:Export/";
 		
-		return WikiFetch.appendURL(PRE_TITLE_URL, name);
+		return URLFetch.appendURL(PRE_TITLE_URL, name);
 	}
 	
 	/**
@@ -64,7 +68,7 @@ public class WikiFetch {
 				"action=query&format=json&prop=links&pllimit=max" + 
 				"&plnamespace=0&titles=";
 		
-		return WikiFetch.appendURL(PRE_TITLE_URL, name);
+		return URLFetch.appendURL(PRE_TITLE_URL, name);
 	}
 	
 	/**
@@ -86,7 +90,7 @@ public class WikiFetch {
 		// The string containing the continue token
 		String continueToken = "&plcontinue=" + cont;
 		
-		return WikiFetch.appendURL(PRE_TITLE_URL, name, continueToken);
+		return URLFetch.appendURL(PRE_TITLE_URL, name, continueToken);
 	}
 	
 	/**
@@ -104,7 +108,7 @@ public class WikiFetch {
 				"action=query&format=json&list=backlinks&bllimit=max" + 
 				"&blnamespace=0&blfilterredir=nonredirects&bltitle=";
 		
-		return WikiFetch.appendURL(PRE_TITLE_URL, name);
+		return URLFetch.appendURL(PRE_TITLE_URL, name);
 	}
 	
 	/**
@@ -127,7 +131,7 @@ public class WikiFetch {
 		// The string containing the continue token
 		String continueToken = "&blcontinue=" + cont;
 		
-		return WikiFetch.appendURL(PRE_TITLE_URL, name, continueToken);
+		return URLFetch.appendURL(PRE_TITLE_URL, name, continueToken);
 	}
 	
 	/**

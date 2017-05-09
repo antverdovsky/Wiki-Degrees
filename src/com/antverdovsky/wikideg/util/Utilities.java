@@ -1,9 +1,12 @@
-package com.antverdovsky.wikideg;
+package com.antverdovsky.wikideg.util;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Miscellaneous utility functions.
+ */
 public class Utilities {
 	/**
 	 * Checks if the specified list of strings contains the target string,
