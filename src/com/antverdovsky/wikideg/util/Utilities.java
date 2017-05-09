@@ -1,5 +1,6 @@
 package com.antverdovsky.wikideg.util;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,6 +22,19 @@ public class Utilities {
 				return true;
 		
 		return false;
+	}
+	
+	/**
+	 * Returns the title of a random Wikipedia article.
+	 * @return The article title.
+	 * @throws IOException If the random article title could not be fetched.
+	 */
+	public static String getRandomArticle() throws IOException {
+		String url = URLFetch.getRandomURL();
+		String json = URLFetch.getData(url);
+		String title = DataParse.parseRandomArticle(json);
+		
+		return title;
 	}
 	
 	/**
