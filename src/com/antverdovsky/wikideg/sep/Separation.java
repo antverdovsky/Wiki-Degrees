@@ -12,6 +12,7 @@ import com.antverdovsky.wikideg.linkfetch.AbstractLinkFetcher;
 import com.antverdovsky.wikideg.linkfetch.BacklinksFetcher;
 import com.antverdovsky.wikideg.linkfetch.ExportLinksFetcher;
 import com.antverdovsky.wikideg.util.DataParse;
+import com.antverdovsky.wikideg.util.Logger;
 import com.antverdovsky.wikideg.util.URLFetch;
 import com.antverdovsky.wikideg.util.Utilities;
 
@@ -150,7 +151,12 @@ public class Separation {
 		
 		// If the starting article contains no embedded links, no path is
 		// possible.
-		if (this.links.isEmpty()) return;
+		if (this.links.isEmpty()) {
+			Logger.logLine("\tNo links exist on the starting page! Unable " +
+					"to complete the path.");
+			
+			return;
+		}
 		
 		// Try to find a two degree of separation path
 		this.pathExists = this.getSeparation2();
@@ -158,7 +164,12 @@ public class Separation {
 		
 		// If the ending article contains no backlinks that link to it, no
 		// path is possible.
-		if (this.backlinks.isEmpty()) return;
+		if (this.backlinks.isEmpty()) {
+			Logger.logLine("\tNo backlinks exist on the ending page! Unable" +
+					" to complete the path.");
+			
+			return;
+		}
 		
 		// Try to find a three or more degree of separation path
 		this.pathExists = this.getSeparation3();
@@ -231,10 +242,20 @@ public class Separation {
 	 * @return True if the degrees of separation is zero. False otherwise.
 	 */
 	private boolean getSeparation0() {
+		Logger.logLine("Checking Zero Degrees Separation: ");
+		
 		this.path.push(this.startArticle);
 		
 		// If start == end -> 0 degrees of separation
-		return this.startArticle.equalsIgnoreCase(this.endArticle);
+		boolean equal = this.startArticle.equalsIgnoreCase(this.endArticle);
+		if (equal) {
+			Logger.logLine("\tThe starting article equals the end article, " + 
+					"zero degrees of separation found.");
+		} else {
+			Logger.logLine("\tThe starting article does not equal the end " +
+					"article, zero degrees of separation not found.");
+		}
+		return equal;
 	}
 	
 	/**
@@ -247,24 +268,35 @@ public class Separation {
 	 *                     starting article.
 	 */
 	private boolean getSeparation1() throws IOException {
+		Logger.logLine("Checking One Degree Separation: " );
+		
 		++(this.numDegrees);
 		
 		// Get the links of the starting article, and short circuit halt if
 		// the end article is found.
-		ArrayList<String> newLinks = linksFetcher.getLinks(this.startArticle,
+		this.links = linksFetcher.getLinks(this.startArticle, 
 				this.endArticle);
-		this.links.addAll(newLinks);
+		
+		Logger.logLine("\tFetched " + this.links.size() + " link(s) from " + 
+				"the starting article.");
 		
 		// If the links contain the end article, then we have one degree of
 		// separation.
-		if (Utilities.containsIgnoreCase(this.links, this.endArticle)) {
+		boolean contain = Utilities.containsIgnoreCase(this.links, 
+				this.endArticle);
+		if (contain) {
 			this.path.push(this.endArticle);
 			
+			Logger.logLine("\tEnd link is contained within the links of " +
+					"the starting article, one degree of separation found.");
+			
 			this.computeEmbeddedPath();
-			return true;
+		} else {
+			Logger.logLine("\tEnd link is not contained within the links " +
+					"of the starting article, one degree of separation not " +
+					"found.");
 		}
-		
-		return false;
+		return contain;
 	}
 	
 	/**
@@ -277,12 +309,17 @@ public class Separation {
 	 *                     starting article.
 	 */
 	private boolean getSeparation2() throws IOException {
+		Logger.logLine("Checking Two Degree Separation: ");
+		
 		++(this.numDegrees);
 		
 		// Get the backlinks of the ending article (short circuit halting will
 		// never happen here since that would imply one degree of separation).
 		this.backlinks =  backlinksFetcher.getLinks(this.endArticle, 
 				this.startArticle);
+		
+		Logger.logLine("\tFetched " + this.backlinks.size() + " backlink(s)" +
+				" from the ending article.");
 		
 		// Find any articles that backlinks has in common with the links. This
 		// implies that there exists some middle article such that we can go
@@ -291,13 +328,23 @@ public class Separation {
 				this.links);
 		
 		// If no middle articles exist, return false
-		if (common.isEmpty()) return false;
+		if (common.isEmpty()) {
+			Logger.logLine("\tFound no middle ground articles between start" +
+					" links and end backlinks, two degrees of separation " +
+					"not found.");
+			
+			return false;
+		}
 		
 		// Fetch some random article from the common set and build a path with
 		// it, returning a separation of two degrees.
 		String middle = common.iterator().next();
 		this.path.push(middle);
 		this.path.push(this.endArticle);
+		
+		Logger.logLine("\tFound middle ground article, \"" + middle + "\", " + 
+				"between start links and end backlinks, two degrees of " +
+				"separation found.");
 		
 		this.computeEmbeddedPath();
 		return true;
@@ -312,6 +359,8 @@ public class Separation {
 	 *                     starting article.
 	 */
 	private boolean getSeparation3() throws IOException {
+		Logger.logLine("Checking Three+ Degree Separation: ");
+		
 		++(this.numDegrees);
 		
 		// Set the predecessor and successor for each link and backlink.
@@ -321,12 +370,20 @@ public class Separation {
 				this.endArticle);
 		
 		while (true) { // Until we have found a link
+			Logger.logLine("\tChecking for " + this.numDegrees + " Degree "
+					+ "Separation: ");
+			Logger.logLine("\t\tLinks Size: " + this.links.size());
+			Logger.logLine("\t\tBacklinks Size: " + this.backlinks.size());
+			
 			// Build the graph from the perspective of the smaller data set.
 			if (this.links.size() <= this.backlinks.size()) {
+				Logger.logLine("\t\tFetching links of current links.");
 				links = this.getSeparation3GrowGraph(linksFetcher);
 				
 				if (links.isEmpty()) return false;
 			} else {
+				Logger.logLine("\t\tFetching backlinks of current " + 
+						"backlinks.");
 				backlinks = this.getSeparation3GrowGraph(backlinksFetcher);
 				
 				if (backlinks.isEmpty()) return false;
@@ -344,6 +401,10 @@ public class Separation {
 				// start to end.
 				String middle = common.iterator().next();
 				
+				Logger.logLine("\tFound middle ground article, \"" + middle + 
+						"\", " + "between links and backlinks, " +
+						this.numDegrees + " degrees of separation found.");
+				
 				// Set the current predecessor / successor of the middle node
 				// to itself, for now.
 				String currentPredecessor = middle;
@@ -357,9 +418,14 @@ public class Separation {
 						this.startArticle)) {
 					// Get the predecessor of the current predecessor and add
 					// it to the backtrace queue.
+					String oldPredecessor = currentPredecessor;
 					currentPredecessor = predecessors.get(
 							currentPredecessor.toLowerCase());
 					backtrace.push(currentPredecessor);
+					
+					Logger.logLine("\t\tFound predecessor, \"" + 
+							currentPredecessor + "\", of link \"" + 
+							oldPredecessor + "\".");
 				}
 				
 				// Pop all of the titles from the queue and onto the path with
@@ -374,15 +440,23 @@ public class Separation {
 				// successors to the path stack, including the middle node and
 				// the end article.
 				while (!currentSuccessor.equalsIgnoreCase(this.endArticle)) {
+					String oldSuccessor = currentSuccessor;
 					this.path.push(currentSuccessor);
 					currentSuccessor = successors.get(
 							currentSuccessor.toLowerCase());
+					Logger.logLine("\t\tFound successor, \"" + 
+							currentSuccessor + "\", of link \"" + 
+							oldSuccessor + "\".");
 				}
 				this.path.push(this.endArticle);
 				
 				this.computeEmbeddedPath();
 				return true;
 			} else {
+				Logger.logLine("\tFound no middle ground articles between links" +
+						" and backlinks, " + this.numDegrees + " degrees of " +
+						"separation not found.");
+				
 				++(this.numDegrees);
 			}
 		}

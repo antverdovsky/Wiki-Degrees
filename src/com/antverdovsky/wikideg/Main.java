@@ -5,6 +5,7 @@ import java.util.Scanner;
 import java.util.Stack;
 
 import com.antverdovsky.wikideg.sep.Separation;
+import com.antverdovsky.wikideg.util.Logger;
 import com.antverdovsky.wikideg.util.Utilities;
 
 /**
@@ -12,11 +13,24 @@ import com.antverdovsky.wikideg.util.Utilities;
  * Separation class.
  */
 public class Main {
+	// Command line arguments booleans
+	private static boolean doDisplayTimeArg = false;
+	private static boolean doDisplayDebugArg = false;
+	
 	/**
 	 * Main execution method.
 	 * @param args The program arguments.
 	 */
 	public static void main(String[] args) {
+		// Check for command line arguments
+		for (String s : args) {
+			if (s.equalsIgnoreCase("-d")) Main.doDisplayDebugArg = true;
+			if (s.equalsIgnoreCase("-t")) Main.doDisplayTimeArg = true;
+		}
+		
+		// Initialize the Debug Logger
+		Logger.setIsEnabled(Main.doDisplayDebugArg);
+		
 		// Scanner for reading from stdin
 		Scanner scanner = new Scanner(System.in);
 		
@@ -42,17 +56,19 @@ public class Main {
 		}
 
 		// Print the starting and ending article titles
-		System.out.println("Searching for path between " + 
-				start + " and " + end);
+		System.out.println("Searching for path between \"" + 
+				start + "\" and \"" + end + "\"");
 		Separation separation = null;
 		
 		// Try to find the path between the start and end
+		double startTime = System.currentTimeMillis(); 
 		try { 
 			separation = new Separation(start, end); 
 		} catch (IOException e) {
 			System.out.println("Unknown exception occured.");
 			return;
 		}
+		double endTime = System.currentTimeMillis();
 		
 		if (separation == null || !separation.getPathExists()) {
 			System.out.println("Unable to find a path from " + 
@@ -82,5 +98,10 @@ public class Main {
 				else System.out.println("");
 			}
 		}
+		
+		// Print out the time taken, if applicable
+		int deltaTime = (int)(endTime - startTime);
+		if (Main.doDisplayTimeArg)
+			System.out.println("Time taken: " + deltaTime + "ms.");
 	}
 }
