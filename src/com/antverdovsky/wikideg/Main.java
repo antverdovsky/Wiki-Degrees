@@ -16,6 +16,33 @@ public class Main {
 	// Command line arguments booleans
 	private static boolean doDisplayTimeArg = false;
 	private static boolean doDisplayDebugArg = false;
+	private static boolean doDisplayHelp = false;
+	
+	/**
+	 * Prints out the help information.
+	 */
+	private static void printHelp() {
+		System.out.println("Command Line Arguments: ");
+		System.out.println("\t-h : Prints out these help instructions.");
+		System.out.println("\t-t : Prints out time taken to compute a path");
+		System.out.println("\t-d : Prints out debug information");
+		
+		System.out.println("\nUsage: ");
+		System.out.println("\tEnter any two Wikipedia article titles or " +
+				"use \"%r\" to fetch a random Wikipedia article title.");
+		System.out.println("\tOnce the path is computed, each title in the " +
+				"path will be outputted. Sometimes article titles are ");
+		System.out.println("\tembedded under different names in the " +
+				"article, in which case the title of the article as it");
+		System.out.println("\tappears in an article will be displayed and " +
+				"surrounded by brackets. Sometimes, paths cannot be ");
+		System.out.println("\tcomputed due to the starting article having " +
+				"no links in it, or the ending article having no links");
+		System.out.println("\twhich lead to it. Use the debug mode to find " +
+				"why a path could not be calculated.");
+		
+		System.out.println("\n\n");
+	}
 	
 	/**
 	 * Main execution method.
@@ -26,7 +53,11 @@ public class Main {
 		for (String s : args) {
 			if (s.equalsIgnoreCase("-d")) Main.doDisplayDebugArg = true;
 			if (s.equalsIgnoreCase("-t")) Main.doDisplayTimeArg = true;
+			if (s.equalsIgnoreCase("-h")) Main.doDisplayHelp = true;
 		}
+		
+		// Print out the help, if applicable
+		if (Main.doDisplayHelp) Main.printHelp();
 		
 		// Initialize the Debug Logger
 		Logger.setIsEnabled(Main.doDisplayDebugArg);
