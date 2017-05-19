@@ -497,7 +497,6 @@ public class Separation {
 		// Since the biggest obstacle to performance for fetching links is
 		// I/O (download speed), we can have a large number of threads here.
 		final int MAX_NUM_THREADS = 128;     // Max Number of Threads at Once
-		final int MIN_TO_MULTITHREAD = 32;   // Min list size to multithread
 		final int MAX_IDEAL_PER_THREAD = 32; // Ideal task size per thread
 		
 		// By default, we use one thread with the whole list being processed
@@ -506,7 +505,7 @@ public class Separation {
 		int numPerThread = thisSide.size();
 		
 		// If the list size is big enough to use multithreading
-		if (thisSide.size() >= MIN_TO_MULTITHREAD) {
+		if (thisSide.size() >= MAX_IDEAL_PER_THREAD) {
 			// Calculate the number of threads to ideally split up the task
 			numThreads = thisSide.size() / MAX_IDEAL_PER_THREAD + 1;
 			
@@ -516,7 +515,7 @@ public class Separation {
 				numThreads = MAX_NUM_THREADS;
 			
 			// Calculate the number of elements in the task per thread
-			numPerThread = thisSide.size() / MAX_NUM_THREADS;
+			numPerThread = thisSide.size() / numThreads;
 		}
 		
 		// Create a list of threads which will be used. Be sure to reset the
