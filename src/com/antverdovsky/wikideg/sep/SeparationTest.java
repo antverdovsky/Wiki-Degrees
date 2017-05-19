@@ -93,8 +93,11 @@ public class SeparationTest {
 			// Fetch all of the links that we can go to from the current 
 			// article.
 			ArrayList<String> links = new ArrayList<String>();
-			try { links = new JSONLinksFetcher().getLinks(current, next); }
-			catch (IOException e) {
+			try {
+				ArrayList<String> targets = new ArrayList<String>(1);
+				targets.add(next);
+				links = new JSONLinksFetcher().getLinks(current, targets);
+			} catch (IOException e) {
 				e.printStackTrace();
 				fail("Failed to fetch articles!");
 			}

@@ -74,8 +74,12 @@ class ThreadedLinkFetcher implements Runnable {
 			
 			// Get the (back)links of the link fetched 
 			ArrayList<String> linksOf = new ArrayList<String>();
-			try { linksOf = linkFetcher.getLinks(link, ""); } 
-			catch (IOException e) { e.printStackTrace(); }
+			try { 
+				linksOf = linkFetcher.getLinks(link, 
+						new ArrayList<String>(targets)); 
+			} catch (IOException e) { 
+				e.printStackTrace(); 
+			}
 
 			// For each link fetched, add it to the predecessor/successor map
 			// and write it to the write to list.
@@ -274,8 +278,9 @@ public class Separation {
 		
 		// Get the links of the starting article, and short circuit halt if
 		// the end article is found.
-		this.links = linksFetcher.getLinks(this.startArticle, 
-				this.endArticle);
+		ArrayList<String> targets = new ArrayList<String>(1);
+		targets.add(this.endArticle);
+		this.links = linksFetcher.getLinks(this.startArticle, targets);
 		
 		Logger.logLine("\tFetched " + this.links.size() + " link(s) from " + 
 				"the starting article.");
@@ -313,10 +318,11 @@ public class Separation {
 		
 		++(this.numDegrees);
 		
-		// Get the backlinks of the ending article (short circuit halting will
-		// never happen here since that would imply one degree of separation).
-		this.backlinks =  backlinksFetcher.getLinks(this.endArticle, 
-				this.startArticle);
+		// Get the backlinks of the ending article, stop if the backlinks
+		// contain any of the starting article's links (then we have a middle
+		// article!).
+		this.backlinks = backlinksFetcher.getLinks(this.endArticle, 
+				new ArrayList<String>(this.links));
 		
 		Logger.logLine("\tFetched " + this.backlinks.size() + " backlink(s)" +
 				" from the ending article.");

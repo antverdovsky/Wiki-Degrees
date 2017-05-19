@@ -11,13 +11,14 @@ public interface AbstractLinkFetcher {
 	 * Returns all (or some, if the target is found) of the links (or 
 	 * backlinks) of the article with the specified name.
 	 * @param article The name of the article.
-	 * @param target If any link extracted from the starting article is equal
-	 *               to the target, the target is appended to the list and the
-	 *               list is returned as is (short circuits the algorithm). 
+	 * @param targets If any link extracted from the starting article is equal
+	 *                to any of the targets, the target is appended to the
+	 *                list and the list is returned as is (short circuits the 
+	 *                algorithm). 
 	 * @return The set of all (or some) of the links or backlinks of the
 	 *         Wikipedia article.
 	 * @throws IOException If the article data could not be fetched.
 	 */
-	public ArrayList<String> getLinks(String article, String target) throws
-			IOException;
+	public ArrayList<String> getLinks(String article, 
+			ArrayList<String> targets) throws IOException;
 }

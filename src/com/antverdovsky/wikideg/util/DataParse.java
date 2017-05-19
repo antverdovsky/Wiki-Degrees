@@ -87,7 +87,8 @@ public class DataParse {
 	 *         found.
 	 */
 	public static String parseBacklinksJSON(
-			String json, ArrayList<String> backlinks, String target) {
+			String json, ArrayList<String> backlinks, 
+			ArrayList<String> targets) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -107,7 +108,7 @@ public class DataParse {
 			// parse any more JSON data.
 			String title = jLinkObj.get("title").getAsString();
 			backlinks.add(title);
-			if (title.equalsIgnoreCase(target)) return "";
+			if (Utilities.containsIgnoreCase(targets, title)) return "";
 		}
 
 		// Navigate Root -> Continue. If unable, then there is no continue
@@ -135,10 +136,12 @@ public class DataParse {
 	 * @param export The export data String.
 	 * @param links The links set into which the parsed links are to be 
 	 *              appended.
-	 * @param target The target String which is to be found in the JSON data.
+	 * @param targets The target Strings which are to be found in the JSON 
+	 *                data.
 	 */
 	public static void parseLinksExport(
-			String export, ArrayList<String> links, String target) {
+			String export, ArrayList<String> links, 
+			ArrayList<String> targets) {
 		// Trim the export text so that we only have the article itself
 		int start = export.indexOf("<text xml:space=\"preserve\"");
 		int end = export.lastIndexOf("</text>");
@@ -169,7 +172,7 @@ public class DataParse {
 			links.add(match);
 			
 			// If we found the target then return
-			if (match.equalsIgnoreCase(target)) return;
+			if (Utilities.containsIgnoreCase(targets, match)) return;
 		}
 	}
 
@@ -184,13 +187,14 @@ public class DataParse {
 	 * @param json The JSON data which is to be parsed.
 	 * @param links The links set into which the parsed links are to be 
 	 *              appended.
-	 * @param target The target String which is to be found in the JSON data. 
+	 * @param targets The target Strings which are to be found in the JSON 
+	 *                data. 
 	 * @return The continue token of the JSON data, or an empty String if the
 	 *         JSON data contains no continue token, or if the target has been
 	 *         found.
 	 */
 	public static String parseLinksJSON(
-			String json, ArrayList<String> links, String target) {
+			String json, ArrayList<String> links, ArrayList<String> targets) {
 		// Create a JSON Parser using GSON and parse the root of the JSON data
 		JsonParser jParser = new JsonParser();
 		JsonElement root = jParser.parse(json);
@@ -222,7 +226,7 @@ public class DataParse {
 			// parse any more JSON data.
 			String title = jLinkObj.get("title").getAsString();
 			links.add(title);
-			if (title.equalsIgnoreCase(target)) return "";
+			if (Utilities.containsIgnoreCase(targets, title)) return "";
 		}
 
 		// Navigate Root -> Continue. If unable, then there is no continue
