@@ -78,7 +78,7 @@ class ThreadedLinkFetcher implements Runnable {
 				linksOf = linkFetcher.getLinks(link, 
 						new ArrayList<String>(targets)); 
 			} catch (IOException e) { 
-				e.printStackTrace(); 
+				continue;
 			}
 
 			// For each link fetched, add it to the predecessor/successor map
@@ -246,7 +246,7 @@ public class Separation {
 	 * @return True if the degrees of separation is zero. False otherwise.
 	 */
 	private boolean getSeparation0() {
-		Logger.logLine("Checking Zero Degrees Separation: ");
+		Logger.logLine("Checking 0 Degrees Separation: ");
 		
 		this.path.push(this.startArticle);
 		
@@ -254,10 +254,10 @@ public class Separation {
 		boolean equal = this.startArticle.equalsIgnoreCase(this.endArticle);
 		if (equal) {
 			Logger.logLine("\tThe starting article equals the end article, " + 
-					"zero degrees of separation found.");
+					"0 degrees of separation found.");
 		} else {
 			Logger.logLine("\tThe starting article does not equal the end " +
-					"article, zero degrees of separation not found.");
+					"article, 0 degrees of separation not found.");
 		}
 		return equal;
 	}
@@ -272,7 +272,7 @@ public class Separation {
 	 *                     starting article.
 	 */
 	private boolean getSeparation1() throws IOException {
-		Logger.logLine("Checking One Degree Separation: " );
+		Logger.logLine("Checking 1 Degree Separation: " );
 		
 		++(this.numDegrees);
 		
@@ -293,12 +293,12 @@ public class Separation {
 			this.path.push(this.endArticle);
 			
 			Logger.logLine("\tEnd link is contained within the links of " +
-					"the starting article, one degree of separation found.");
+					"the starting article, 1 degree of separation found.");
 			
 			this.computeEmbeddedPath();
 		} else {
 			Logger.logLine("\tEnd link is not contained within the links " +
-					"of the starting article, one degree of separation not " +
+					"of the starting article, 1 degree of separation not " +
 					"found.");
 		}
 		return contain;
@@ -314,7 +314,7 @@ public class Separation {
 	 *                     starting article.
 	 */
 	private boolean getSeparation2() throws IOException {
-		Logger.logLine("Checking Two Degree Separation: ");
+		Logger.logLine("Checking 2 Degrees Separation: ");
 		
 		++(this.numDegrees);
 		
@@ -349,7 +349,7 @@ public class Separation {
 		this.path.push(this.endArticle);
 		
 		Logger.logLine("\tFound middle ground article, \"" + middle + "\", " + 
-				"between start links and end backlinks, two degrees of " +
+				"between start links and end backlinks, 2 degrees of " +
 				"separation found.");
 		
 		this.computeEmbeddedPath();
@@ -365,8 +365,6 @@ public class Separation {
 	 *                     starting article.
 	 */
 	private boolean getSeparation3() throws IOException {
-		Logger.logLine("Checking Three+ Degree Separation: ");
-		
 		++(this.numDegrees);
 		
 		// Set the predecessor and successor for each link and backlink.
@@ -376,19 +374,19 @@ public class Separation {
 				this.endArticle);
 		
 		while (true) { // Until we have found a link
-			Logger.logLine("\tChecking for " + this.numDegrees + " Degree "
+			Logger.logLine("Checking for " + this.numDegrees + " Degrees "
 					+ "Separation: ");
-			Logger.logLine("\t\tLinks Size: " + this.links.size());
-			Logger.logLine("\t\tBacklinks Size: " + this.backlinks.size());
+			Logger.logLine("\tLinks Size: " + this.links.size());
+			Logger.logLine("\tBacklinks Size: " + this.backlinks.size());
 			
 			// Build the graph from the perspective of the smaller data set.
 			if (this.links.size() <= this.backlinks.size()) {
-				Logger.logLine("\t\tFetching links of current links.");
+				Logger.logLine("\tFetching links of current links.");
 				links = this.getSeparation3GrowGraph(linksFetcher);
 				
 				if (links.isEmpty()) return false;
 			} else {
-				Logger.logLine("\t\tFetching backlinks of current " + 
+				Logger.logLine("\tFetching backlinks of current " + 
 						"backlinks.");
 				backlinks = this.getSeparation3GrowGraph(backlinksFetcher);
 				
@@ -429,7 +427,7 @@ public class Separation {
 							currentPredecessor.toLowerCase());
 					backtrace.push(currentPredecessor);
 					
-					Logger.logLine("\t\tFound predecessor, \"" + 
+					Logger.logLine("\tFound predecessor, \"" + 
 							currentPredecessor + "\", of link \"" + 
 							oldPredecessor + "\".");
 				}
@@ -450,7 +448,7 @@ public class Separation {
 					this.path.push(currentSuccessor);
 					currentSuccessor = successors.get(
 							currentSuccessor.toLowerCase());
-					Logger.logLine("\t\tFound successor, \"" + 
+					Logger.logLine("\tFound successor, \"" + 
 							currentSuccessor + "\", of link \"" + 
 							oldSuccessor + "\".");
 				}
